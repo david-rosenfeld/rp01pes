@@ -1,0 +1,249 @@
+# Preliminary Experiments System - Configuration File
+# This file provides configuration for all 10 preliminary experiments
+
+# Execution settings
+execution:
+  log_dir: "logs"
+  log_level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  mode: "sequential"  # sequential, parallel, selective
+
+# Output settings
+output:
+  directory: "results"
+  formats:
+    - "json"
+    - "csv"
+    - "markdown"
+
+# LLM Model Configurations
+models:
+  # Mock provider for testing (no API key needed)
+  mock:
+    provider: "mock"
+    model: "mock-model-1.0"
+    temperature: 0.7
+  
+  # OpenAI models (TODO: Add API key)
+  gpt4:
+    provider: "openai"
+    model: "gpt-4"
+    api_key: "YOUR_OPENAI_API_KEY_HERE"  # TODO: Replace with actual key
+    temperature: 0.7
+    max_tokens: 2000
+    cost_per_1k_prompt_tokens: 0.03
+    cost_per_1k_completion_tokens: 0.06
+  
+  gpt35:
+    provider: "openai"
+    model: "gpt-3.5-turbo"
+    api_key: "YOUR_OPENAI_API_KEY_HERE"  # TODO: Replace with actual key
+    temperature: 0.7
+    max_tokens: 2000
+    cost_per_1k_prompt_tokens: 0.0015
+    cost_per_1k_completion_tokens: 0.002
+  
+  # Anthropic Claude (TODO: Add API key)
+  claude_sonnet:
+    provider: "anthropic"
+    model: "claude-sonnet-4"
+    api_key: "YOUR_ANTHROPIC_API_KEY_HERE"  # TODO: Replace with actual key
+    temperature: 0.7
+    max_tokens: 4000
+    cost_per_1k_prompt_tokens: 0.003
+    cost_per_1k_completion_tokens: 0.015
+  
+  # Google Gemini (TODO: Add API key)
+  gemini:
+    provider: "google"
+    model: "gemini-pro"
+    api_key: "YOUR_GOOGLE_API_KEY_HERE"  # TODO: Replace with actual key
+    temperature: 0.7
+    max_tokens: 2048
+
+# Dataset configurations
+datasets:
+  libeest:
+    name: "LibEST"
+    base_path: "data/LibEST"  # TODO: Update with actual path
+    language: "C"
+    requirements_dir: "requirements"
+    source_dir: "src"
+    ground_truth_file: "ground.txt"
+    link_types: ["Rq→Src"]
+  
+  ebt:
+    name: "EBT"
+    base_path: "data/EBT"  # TODO: Update with actual path
+    language: "Java"
+    requirements_dir: "requirements"
+    source_dir: "src"
+    tests_dir: "tests"
+    ground_truth_file: "ground.txt"
+    link_types: ["Rq→Src", "Rq→Test"]
+  
+  itrust:
+    name: "iTrust"
+    base_path: "data/iTrust"  # TODO: Update with actual path
+    language: "Java"
+    requirements_dir: "use_cases"
+    source_dir: "src"
+    ground_truth_file: "ground.txt"
+    link_types: ["UC→Src"]
+
+# Experiment-specific configurations
+
+experiments:
+  # PE01: Language Effect Assessment
+  language_effect:
+    enabled: true
+    datasets: ["albergate", "smos"]  # Italian datasets
+    models: ["gpt4", "claude_sonnet"]
+    task_type: "bug_fix"  # Representative task
+    sample_size: 10
+    significance_level: 0.05
+  
+  # PE02: Model Selection - Prompt-Based
+  model_selection:
+    enabled: true
+    models_per_category: 2
+    candidate_models:
+      # Closed-source models
+      - name: "GPT-4"
+        provider: "mock"  # Change to "openai" when ready
+        model: "gpt-4"
+        category: "closed-source"
+        temperature: 0.7
+        max_tokens: 2000
+        cost_per_1k_prompt_tokens: 0.03
+        cost_per_1k_completion_tokens: 0.06
+      
+      - name: "Claude-Sonnet"
+        provider: "mock"  # Change to "anthropic" when ready
+        model: "claude-sonnet-4"
+        category: "closed-source"
+        temperature: 0.7
+        max_tokens: 4000
+        cost_per_1k_prompt_tokens: 0.003
+        cost_per_1k_completion_tokens: 0.015
+      
+      - name: "GPT-3.5-Turbo"
+        provider: "mock"  # Change to "openai" when ready
+        model: "gpt-3.5-turbo"
+        category: "closed-source"
+        temperature: 0.7
+        max_tokens: 2000
+        cost_per_1k_prompt_tokens: 0.0015
+        cost_per_1k_completion_tokens: 0.002
+      
+      # Open-source models (via API)
+      - name: "Llama-3-70B"
+        provider: "mock"  # TODO: Configure actual provider
+        model: "llama-3-70b"
+        category: "open-source"
+        temperature: 0.7
+        max_tokens: 2000
+        cost_per_1k_prompt_tokens: 0.0
+        cost_per_1k_completion_tokens: 0.0
+      
+      - name: "Mistral-Large"
+        provider: "mock"  # TODO: Configure actual provider
+        model: "mistral-large"
+        category: "open-source"
+        temperature: 0.7
+        max_tokens: 2000
+        cost_per_1k_prompt_tokens: 0.0
+        cost_per_1k_completion_tokens: 0.0
+    
+    benchmark_task:
+      description: "Simple Python function generation"
+      prompt: |
+        Write a Python function called 'calculate_sum' that takes a list of numbers
+        and returns their sum. Include a docstring and handle edge cases like an
+        empty list.
+      evaluation_criteria:
+        correctness: "Function exists and handles basic case"
+        documentation: "Includes docstring"
+        error_handling: "Handles empty list"
+  
+  # PE03: Agent Selection
+  agent_selection:
+    enabled: true
+    agents_per_category: 2
+    candidate_agents:
+      # TODO: Configure actual agentic systems
+      - name: "Agent-A"
+        category: "closed-source"
+        backend_models: ["gpt-4", "claude-sonnet"]
+      - name: "Agent-B"
+        category: "open-source"
+        backend_models: ["llama-3-70b"]
+    benchmark_task:
+      description: "Simple bug fix task"
+      # TODO: Define specific task
+  
+  # PE04: Temperature Optimization
+  temperature_optimization:
+    enabled: true
+    correctness_tasks: ["bug_fix", "documentation"]
+    exploratory_tasks: ["new_feature", "test_generation"]
+    correctness_temperatures: [0.0, 0.1, 0.2]
+    exploratory_temperatures: [0.5, 0.6, 0.7]
+    sample_size_per_temperature: 5
+  
+  # PE05: Max Token Determination
+  max_token_determination:
+    enabled: true
+    task_types: ["new_feature", "bug_fix", "test_generation", "documentation"]
+    sample_size: 20
+    percentiles: [50, 75, 90, 95, 99]
+  
+  # PE06: Stop Sequence Definition
+  stop_sequence:
+    enabled: true
+    task_types: ["new_feature", "bug_fix", "test_generation", "documentation"]
+    candidate_sequences:
+      new_feature: ["```\n\n", "END_OF_CODE"]
+      bug_fix: ["```\n\n", "END_OF_FIX"]
+      test_generation: ["```\n\n", "END_OF_TESTS"]
+      documentation: ["```\n\n", "END_OF_DOC"]
+  
+  # PE07: Prompting Strategy Testing
+  prompt_strategy:
+    enabled: true
+    strategies:
+      - "zero-shot"
+      - "zero-shot-cot"
+      - "few-shot-cot"
+    sample_size: 10
+  
+  # PE08: Control Condition Determination
+  control_condition:
+    enabled: true
+    variants:
+      - "full_codebase"
+      - "expanded_file_list"
+    expansion_factors: [2, 3, 5]
+  
+  # PE09: Token Budget Allocation
+  token_budget:
+    enabled: true
+    total_budget: 8000
+    sections:
+      persona: 100
+      instruction: 500
+      requirement: 1000
+      traceability_bundle: 4000
+      file_list: 2000
+      output_specification: 400
+  
+  # PE10: Power Analysis
+  power_analysis:
+    enabled: true
+    power_target: 0.80
+    alpha: 0.05
+    effect_sizes:
+      new_feature: 0.5  # Medium effect
+      bug_fix: 0.3      # Small-medium effect
+      test_generation: 0.5
+      documentation: 0.3
+    inflation_factor: 1.15  # 15% inflation for failures
