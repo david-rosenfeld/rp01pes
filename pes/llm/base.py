@@ -190,34 +190,62 @@ class BaseLLMProvider(ABC):
 class MockLLMProvider(BaseLLMProvider):
     """
     Mock LLM provider for testing without API calls.
-    
+
     This provider returns synthetic responses without making actual API calls,
-    useful for testing and development.
+    useful for testing and development. Can simulate realistic traceability
+    task responses.
     """
-    
+
     def _validate_config(self) -> None:
         """Validate mock provider config (minimal validation)."""
         if not self.model:
             self.model = "mock-model-1.0"
-    
+
+        # Get response mode from config
+        self.response_mode = self.config.get('response_mode', 'simple')
+        self.accuracy_bias = self.config.get('accuracy_bias', 0.85)
+
     def _make_request(self, prompt: str, **kwargs) -> LLMResponse:
         """
         Generate mock response.
-        
+
         Args:
             prompt: Input prompt
-            **kwargs: Ignored parameters
-        
+            **kwargs: Additional parameters (temperature affects randomness)
+
         Returns:
             Mock LLMResponse
         """
-        # Generate synthetic response
-        response_text = f"[MOCK RESPONSE] This is a simulated response to the prompt: {prompt[:50]}..."
-        
+        import random
+        import hashlib
+
+        # Use prompt hash to generate deterministic but varied responses
+        prompt_hash = int(hashlib.md5(prompt.encode()).hexdigest(), 16)
+        random.seed(prompt_hash)
+
+        # Get temperature to affect accuracy
+        temperature = kwargs.get('temperature', 0.7)
+
+        # Determine if this is a traceability task
+        is_trace_task = any(keyword in prompt.lower()
+                           for keyword in ['trace', 'link', 'requirement', 'artifact'])
+
+        if self.response_mode == 'realistic' and is_trace_task:
+            # Generate realistic traceability response
+            response_text = self._generate_traceability_response(
+                prompt, temperature, random
+            )
+        else:
+            # Simple mock response
+            response_text = f"[MOCK RESPONSE] This is a simulated response to the prompt: {prompt[:50]}..."
+
         # Estimate tokens
         prompt_tokens = len(prompt.split())
         completion_tokens = len(response_text.split())
-        
+
+        # Simulate realistic duration (0.5-2 seconds)
+        duration = random.uniform(0.5, 2.0)
+
         return LLMResponse(
             text=response_text,
             model=self.model,
@@ -225,6 +253,60 @@ class MockLLMProvider(BaseLLMProvider):
             completion_tokens=completion_tokens,
             total_tokens=prompt_tokens + completion_tokens,
             finish_reason="stop",
-            duration_seconds=0.1,
-            metadata={'provider': 'mock'}
+            duration_seconds=duration,
+            metadata={
+                'provider': 'mock',
+                'response_mode': self.response_mode
+            }
         )
+
+    def _generate_traceability_response(
+        self,
+        prompt: str,
+        temperature: float,
+        random_gen
+    ) -> str:
+        """
+        Generate realistic traceability task response.
+
+        Args:
+            prompt: Task prompt
+            temperature: Controls variability
+            random_gen: Random number generator (seeded)
+
+        Returns:
+            Realistic traceability response text
+        """
+        # Adjust accuracy based on temperature and accuracy bias
+        # Lower temperature = higher accuracy
+        accuracy = self.accuracy_bias - (temperature * 0.1)
+        accuracy = max(0.0, min(1.0, accuracy))
+
+        # Determine if response should be correct
+        is_correct = random_gen.random() < accuracy
+
+        # Generate trace link response (example format)
+        if is_correct:
+            links = [
+                f"REQ-{random_gen.randint(1, 100):03d} -> CODE-{random_gen.randint(1, 50):03d}",
+                f"REQ-{random_gen.randint(1, 100):03d} -> TEST-{random_gen.randint(1, 80):03d}"
+            ]
+        else:
+            # Incorrect or missing links
+            if random_gen.random() < 0.5:
+                # Wrong link
+                links = [f"REQ-{random_gen.randint(1, 100):03d} -> CODE-{random_gen.randint(200, 300):03d}"]
+            else:
+                # No links found
+                links = []
+
+        # Format response
+        if links:
+            response = "Based on the requirements and code, I've identified the following trace links:\n\n"
+            for i, link in enumerate(links, 1):
+                response += f"{i}. {link}\n"
+            response += f"\nConfidence: {accuracy*100:.1f}%"
+        else:
+            response = "No trace links could be identified with sufficient confidence."
+
+        return response

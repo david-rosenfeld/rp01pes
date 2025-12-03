@@ -24,17 +24,24 @@ class ConfigurationManager:
     for YAML and JSON formats, validation, and hierarchical structure.
     """
     
-    def __init__(self, config_path: Optional[str] = None):
+    def __init__(self, config_path: Optional[str] = None, config_dict: Optional[Dict[str, Any]] = None):
         """
         Initialize configuration manager.
-        
+
         Args:
             config_path: Path to configuration file (YAML or JSON)
+            config_dict: Configuration dictionary (for testing/programmatic use)
         """
         self.config_path = config_path
         self.config = {}
-        
-        if config_path:
+
+        if config_dict is not None:
+            # Use provided dictionary directly
+            if not isinstance(config_dict, dict):
+                raise ConfigurationError("config_dict must be a dictionary")
+            self.config = config_dict
+            logger.info("Configuration loaded from dictionary")
+        elif config_path:
             self.load(config_path)
     
     def load(self, config_path: str) -> Dict[str, Any]:
