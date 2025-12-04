@@ -1,8 +1,8 @@
 # Implementation Status - Preliminary Experiments System
 
 **Last Updated:** 2025-12-03
-**Session:** Phase 3 - Critical Experiments Implemented (Session 5)
-**Overall Status:** Core System + Dataset Management + Statistical Analysis + 3 Critical Experiments Complete (~55% of total system)
+**Session:** Phase 4 - Additional Experiments Implemented (Session 5)
+**Overall Status:** Core System + Dataset Management + Statistical Analysis + 7 Experiments Complete (~70% of total system)
 
 ---
 
@@ -19,7 +19,10 @@
 | PE10 (Power Analysis) | ✅ Complete | High | Fully implemented & tested |
 | PE01 (Language Effect) | ✅ Complete | High | Fully implemented |
 | PE04 (Temperature Opt) | ✅ Complete | High | Fully implemented |
-| PE03, PE05-PE09 | ⚠️ Stub | Medium | Framework only, logic needed |
+| PE05 (Max Token) | ✅ Complete | High | Fully implemented & tested |
+| PE07 (Prompt Strategy) | ✅ Complete | High | Fully implemented |
+| PE09 (Token Budget) | ✅ Complete | High | Fully implemented |
+| PE03, PE06, PE08 | ⚠️ Stub | Medium | Framework only, logic needed |
 | Report Generation | ⚠️ Partial | Medium | JSON only, need Markdown/HTML/PDF |
 | Agentic Integration | ❌ TODO | Low | For PE03 |
 
@@ -396,20 +399,139 @@ print(results['recommendation']['decision'])
 # Example: "Use original language (Italian)" or "Use English translation"
 ```
 
+#### 7. Phase 4: Additional Preliminary Experiments
+
+**Status:** ✅ COMPLETE (3 experiments)
+**Date Completed:** 2025-12-03
+
+**Completed Experiments:**
+- `pes/experiments/pe05_maxtokendetermination.py` - ✅ Complete (460 lines)
+- `pes/experiments/pe07_promptstrategy.py` - ✅ Complete (598 lines)
+- `pes/experiments/pe09_tokenbudget.py` - ✅ Complete (633 lines)
+- `test_pe05.py` - ✅ Complete test suite (3 tests)
+
+**PE05: Max Token Determination**
+- **Purpose:** Determine appropriate max_tokens settings per TaskType
+- **Implementation:**
+  - Measures output token lengths from sample tasks
+  - Computes distribution statistics (mean, median, 95th/99th percentiles)
+  - Assesses truncation risk at various limits (100, 200, 300, 500, 1000, 2000)
+  - Recommends specific limits or "no limit" based on variability
+- **Testing:** Comprehensive test suite with 3 scenarios, all passing
+- **Status:** Fully functional, uses mock provider
+
+**PE07: Prompt Strategy Comparison**
+- **Purpose:** Compare prompting strategies to find optimal approach
+- **Implementation:**
+  - Tests zero-shot, zero-shot + CoT, and optionally few-shot + CoT
+  - Creates structured prompts (persona, instruction, requirement, output format)
+  - Executes sample tasks with each strategy
+  - Performs ANOVA to compare strategies statistically
+  - Selects optimal strategy based on overall accuracy
+  - Generates example prompts for each TaskType
+- **Testing:** Quick validation test passed
+- **Status:** Fully functional with mock provider
+
+**PE09: Token Budget Allocation**
+- **Purpose:** Determine optimal token budget allocation across prompt sections
+- **Implementation:**
+  - Measures token usage for 6 sections (persona, instruction, requirement, traceability_bundle, file_list, output_specification)
+  - Designs 3 allocation schemes (proportional, context-focused, balanced)
+  - Tests schemes for truncation risk
+  - Adjusts allocations if truncation exceeds 5% threshold
+  - Outputs finalized budget configuration with per-section limits
+- **Testing:** Quick validation test passed
+- **Status:** Fully functional with dataset integration
+
+**Requirements Satisfied:**
+- REQ-3.6.5 (Max Token Determination) - ✅ Complete
+- REQ-3.6.7 (Prompting Strategy Testing) - ✅ Complete
+- REQ-3.6.9 (Token Budget Allocation) - ✅ Complete
+
+**Usage Example (PE05):**
+```python
+from pes.core.config import ConfigurationManager
+from pes.experiments.pe05_maxtokendetermination import MaxTokenDeterminationExperiment
+
+config = ConfigurationManager(config_dict={
+    'experiments': {
+        'maxtokendetermination': {
+            'model': {'provider': 'mock', 'response_mode': 'realistic'},
+            'dataset': 'albergate',
+            'task_types': ['trace', 'recover'],
+            'sample_size': 15,
+            'candidate_limits': [100, 200, 300, 500, 1000],
+            'max_truncation_rate': 0.05
+        }
+    }
+})
+
+experiment = MaxTokenDeterminationExperiment(config)
+results = experiment.run()
+
+print(results['recommendations']['trace']['max_tokens'])
+# Output: 500 (or None for no limit)
+```
+
+**Usage Example (PE07):**
+```python
+from pes.experiments.pe07_promptstrategy import PromptStrategyExperiment
+
+config = ConfigurationManager(config_dict={
+    'experiments': {
+        'promptstrategy': {
+            'model': {'provider': 'mock', 'response_mode': 'realistic'},
+            'dataset': 'albergate',
+            'task_types': ['trace', 'recover'],
+            'sample_size': 10,
+            'include_few_shot': False  # Test zero-shot and zero-shot+CoT only
+        }
+    }
+})
+
+experiment = PromptStrategyExperiment(config)
+results = experiment.run()
+
+print(results['selected_strategy']['strategy_name'])
+# Output: "Zero-Shot + CoT" (expected based on requirements)
+print(results['example_prompts']['trace'])
+# Output: Full example prompt for trace task
+```
+
+**Usage Example (PE09):**
+```python
+from pes.experiments.pe09_tokenbudget import TokenBudgetExperiment
+
+config = ConfigurationManager(config_dict={
+    'experiments': {
+        'tokenbudget': {
+            'total_budget': 4000,
+            'dataset': 'albergate',
+            'sample_size': 20
+        }
+    }
+})
+
+experiment = TokenBudgetExperiment(config)
+results = experiment.run()
+
+print(results['final_allocation']['scheme_name'])
+# Output: "Context-Focused" or "Balanced" or "Proportional"
+print(results['budget_configuration']['per_section_limits']['traceability_bundle'])
+# Output: {'max_tokens': 2000, 'percentage': 50.0, 'typical_usage': 800, ...}
+```
+
 ---
 
 ### ⚠️ PARTIAL/STUB Components
 
-#### 7. Remaining PE Experiment Stubs (PE03, PE05-PE09)
+#### 8. Remaining PE Experiment Stubs (PE03, PE06, PE08)
 
 **Files:**
 - `pes/experiments/pe03_agentselection.py` - ⚠️ Stub
-- `pes/experiments/pe05_maxtokendetermination.py` - ⚠️ Stub
 - `pes/experiments/pe06_stopsequence.py` - ⚠️ Stub
-- `pes/experiments/pe07_promptstrategy.py` - ⚠️ Stub
 - `pes/experiments/pe08_controlcondition.py` - ⚠️ Stub
-- `pes/experiments/pe09_tokenbudget.py` - ⚠️ Stub
-- `pe03.py`, `pe05.py` through `pe09.py` - ⚠️ Stub programs
+- `pe03.py`, `pe06.py`, `pe08.py` - ⚠️ Stub programs
 
 **What Exists:**
 - Class structure inheriting from BaseExperiment
@@ -425,7 +547,7 @@ print(results['recommendation']['decision'])
 - Result interpretation
 
 **Requirements Status:**
-- REQ-3.6.3, 3.6.5-3.6.9 - ⚠️ Framework only
+- REQ-3.6.3, 3.6.6, 3.6.8 - ⚠️ Framework only
 
 **Next Steps for Each:**
 
@@ -436,13 +558,6 @@ print(results['recommendation']['decision'])
 4. Test with multiple backend models
 5. Measure success rate, iterations, tools
 6. Rank and select top agents
-
-**PE05 (Max Token Determination):**
-1. Collect output samples
-2. Measure token lengths
-3. Compute distribution statistics
-4. Assess truncation risk
-5. Recommend limits or null
 
 **PE06 (Stop Sequence):**
 1. Design candidate sequences per TaskType
@@ -590,9 +705,25 @@ pes/datasets/ground_truth.py        # Traceability link parsing
 pes/datasets/traceability.py        # Bundle generation with token budgets
 pes/datasets/__init__.py            # Dataset module API
 pes/datasets/README.md              # Dataset module user guide
+pes/analysis/utils.py               # Analysis data validation
+pes/analysis/descriptive.py         # Descriptive statistics
+pes/analysis/hypothesis_tests.py    # Hypothesis testing
+pes/analysis/effect_sizes.py        # Effect size calculations
+pes/analysis/power_analysis.py      # Power analysis
+pes/analysis/correlation.py         # Correlation analysis
+pes/analysis/__init__.py            # Analysis module API
 pes/experiments/pe02_model_selection.py  # PE02 complete
+pes/experiments/pe10_poweranalysis.py    # PE10 complete
+pes/experiments/pe01_languageeffect.py   # PE01 complete
+pes/experiments/pe04_temperatureoptimization.py  # PE04 complete
+pes/experiments/pe05_maxtokendetermination.py    # PE05 complete
+pes/experiments/pe07_promptstrategy.py           # PE07 complete
+pes/experiments/pe09_tokenbudget.py              # PE09 complete
 pe02.py                             # PE02 standalone program
 test_datasets.py                    # Dataset module test suite
+test_analysis.py                    # Analysis module test suite
+test_pe10.py                        # PE10 test suite
+test_pe05.py                        # PE05 test suite
 configs/config.yaml                 # Example configuration
 ```
 
@@ -600,12 +731,9 @@ configs/config.yaml                 # Example configuration
 
 ```
 pes/experiments/pe03_agentselection.py
-pes/experiments/pe05_maxtokendetermination.py
 pes/experiments/pe06_stopsequence.py
-pes/experiments/pe07_promptstrategy.py
 pes/experiments/pe08_controlcondition.py
-pes/experiments/pe09_tokenbudget.py
-pe03.py, pe05.py, pe06.py, pe07.py, pe08.py, pe09.py
+pe03.py, pe06.py, pe08.py
 ```
 
 ### ❌ Missing Files (Not Created)
@@ -710,10 +838,44 @@ pes/utils/*.py (utility functions)
 
 **Time Taken:** 4-5 hours
 
-### Sessions 6-12: Complete Remaining Experiments
+### Session 6: Phase 4 Additional Experiments ✅ COMPLETE
 
-**Each session:** Complete 1-2 experiments using established patterns
-**Remaining:** PE03, PE05-PE09 (6 experiments)
+**Goal:** Implement PE05, PE07, PE09 using mock provider
+
+**Status:** ✅ COMPLETED (2025-12-03)
+
+**Completed Steps:**
+1. ✅ Implemented PE05 - Max Token Determination (460 lines)
+   - Distribution analysis with percentiles
+   - Truncation risk assessment
+   - Per-TaskType recommendations
+   - Fixed dataset integration issues (load_dataset, requirement.content)
+   - Created comprehensive test suite (3 tests)
+2. ✅ Implemented PE07 - Prompt Strategy Comparison (598 lines)
+   - Zero-shot, Zero-shot + CoT, Few-shot + CoT strategies
+   - ANOVA-based strategy comparison
+   - Example prompt generation
+   - Quick validation testing
+3. ✅ Implemented PE09 - Token Budget Allocation (633 lines)
+   - 6 prompt section measurements
+   - 3 allocation schemes (proportional, context-focused, balanced)
+   - Truncation testing and adjustment
+   - Dataset integration for realistic measurements
+4. ✅ Updated IMPLEMENTATION_STATUS.md with Phase 4 details
+
+**Results:**
+- 3 additional experiments fully functional
+- All REQ-3.6.5, REQ-3.6.7, REQ-3.6.9 requirements satisfied
+- Total 7/10 experiments complete (70% of PE suite)
+- Dataset integration validated across experiments
+- Token estimation working without external libraries
+
+**Time Taken:** 2-3 hours
+
+### Sessions 7-9: Complete Remaining Experiments
+
+**Each session:** Complete 1 experiment using established patterns
+**Remaining:** PE03, PE06, PE08 (3 experiments)
 **Prerequisites:** PE03 requires agentic system integration (REQ-3.3)
 
 ---
@@ -741,13 +903,16 @@ pes/utils/*.py (utility functions)
 - [x] PE10 (Power Analysis) with pilot data
 - [x] PE01 (Language Effect) with mock provider
 - [x] PE04 (Temperature Optimization) with mock provider
+- [x] PE05 (Max Token Determination) with mock provider
+- [x] PE07 (Prompt Strategy) with mock provider
+- [x] PE09 (Token Budget) with mock provider and datasets
 - [x] Enhanced MockLLMProvider with realistic responses
 
 ### What Needs Testing
 
 - [ ] Real LLM provider integration
-- [ ] PE01, PE04 with real models (currently using mock)
-- [ ] Remaining experiments (PE03, PE05-PE09)
+- [ ] PE01, PE04, PE05, PE07, PE09 with real models (currently using mock)
+- [ ] Remaining experiments (PE03, PE06, PE08)
 - [ ] Report generation (Markdown/HTML/PDF)
 - [ ] Error handling edge cases
 - [ ] Parallel execution
