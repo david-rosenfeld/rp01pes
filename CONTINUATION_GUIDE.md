@@ -233,6 +233,33 @@ Look for them where you saved the Claude-generated files.
 
 ---
 
+## Known Gaps and Blockers
+
+The following gaps exist in the current implementation. See `IMPLEMENTATION_STATUS.md` for full details.
+
+### Critical for Real API Usage
+
+| Gap | Requirement | Impact |
+|-----|-------------|--------|
+| **Rate limiting/retry logic** | REQ-3.2.5 | Must implement before real LLM providers work reliably |
+
+### Blocking Specific Experiments
+
+| Gap | Requirement | Impact |
+|-----|-------------|--------|
+| **Agentic integration** | REQ-3.3 | Blocks PE03 (Agent Selection) |
+
+### Not Implemented (Lower Priority)
+
+| Gap | Requirement | Workaround |
+|-----|-------------|------------|
+| Unified CLI | REQ-3.10 | Use individual `peXX.py` scripts |
+| Parallel execution | REQ-3.5.2.2 | Run experiments sequentially |
+| Resume capability | REQ-3.5.3.2 | Restart interrupted runs |
+| Report generation | REQ-3.8.2-3.8.5 | JSON output works; no Markdown/HTML/PDF |
+
+---
+
 ## Best Practices for Multi-Session Development
 
 ### 1. Work Incrementally

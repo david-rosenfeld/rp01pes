@@ -1,8 +1,10 @@
 # Implementation Status - Preliminary Experiments System
 
-**Last Updated:** 2025-12-03
+**Last Updated:** 2026-02-19
 **Session:** Phase 4 - Additional Experiments Implemented (Session 5)
 **Overall Status:** Core System + Dataset Management + Statistical Analysis + 7 Experiments Complete (~70% of total system)
+
+> **Note:** This document is the single source of truth for implementation status. See `CONTINUATION_GUIDE.md` for development workflow guidance.
 
 ---
 
@@ -23,8 +25,12 @@
 | PE07 (Prompt Strategy) | ✅ Complete | High | Fully implemented |
 | PE09 (Token Budget) | ✅ Complete | High | Fully implemented |
 | PE03, PE06, PE08 | ⚠️ Stub | Medium | Framework only, logic needed |
-| Report Generation | ⚠️ Partial | Medium | JSON only, need Markdown/HTML/PDF |
-| Agentic Integration | ❌ TODO | Low | For PE03 |
+| Report Generation | ❌ TODO | Medium | JSON only; Markdown/HTML/PDF not implemented |
+| Agentic Integration | ❌ TODO | Low | For PE03; blocks REQ-3.3 |
+| Command-Line Interface | ❌ TODO | Low | REQ-3.10; using individual scripts as workaround |
+| Rate Limiting/Retry | ❌ TODO | High | REQ-3.2.5; critical for real API usage |
+| Parallel Execution | ❌ TODO | Low | REQ-3.5.2.2; sequential only currently |
+| Resume Capability | ❌ TODO | Low | REQ-3.5.3; interrupted runs must restart |
 
 **Legend:**
 - ✅ Complete: Fully implemented and functional
@@ -59,6 +65,7 @@
 
 **Requirements Satisfied:**
 - REQ-3.1 (Configuration Management) - ✅ Complete
+  - REQ-3.1.4 (Command-line Override) - ⚠️ Partial (`--section.param=value` syntax not implemented)
 - REQ-3.5.5 (Error Handling) - ✅ Complete
 - REQ-3.9 (Logging and Monitoring) - ✅ Partial (basic logging complete)
 
@@ -83,6 +90,10 @@
 **Requirements Satisfied:**
 - REQ-3.2.1 (LLM Abstraction Layer) - ✅ Complete
 - REQ-3.2.4 (Response Processing) - ✅ Complete
+
+**Requirements NOT Satisfied (Mock Provider):**
+- REQ-3.2.2 (API Communication Backends) - ❌ Real providers not implemented
+- REQ-3.2.5 (Rate Limiting and Retry Logic) - ❌ Not implemented; **critical for real API usage**
 
 #### 3. PE02: Model Selection Experiment
 
@@ -617,30 +628,7 @@ print(results['budget_configuration']['per_section_limits']['traceability_bundle
 - REQ-3.2.2 (API Communication Backends) - ❌ TODO
 - REQ-3.2.5 (Rate Limiting and Retry Logic) - ❌ TODO
 
-#### 9. Agentic System Integration (Beyond Basic JSON) (`pes/analysis/`)
-
-**Status:** ❌ Not Started  
-**Priority:** Medium  
-**Needed for:** PE01, PE10, others
-
-**Needed Files:**
-- `pes/analysis/statistics.py` - Statistical tests and computations
-- `pes/analysis/effect_sizes.py` - Cohen's d, Cliff's Delta
-- `pes/analysis/power.py` - Power analysis calculations
-
-**Implementation Steps:**
-1. Install scipy, numpy for statistical computing
-2. Implement descriptive statistics (mean, median, std, etc.)
-3. Implement hypothesis tests (t-test, Wilcoxon, ANOVA)
-4. Implement effect size calculations (Cohen's d, Cliff's Delta)
-5. Implement power analysis for sample size determination
-6. Implement correlation analysis
-7. Add confidence interval calculations
-
-**Requirements:**
-- REQ-3.8.1 (Statistical Analysis Engine) - ❌ TODO
-
-#### 9. Agentic System Integration (`pes/analysis/`)
+#### 9. Report Generation (`pes/analysis/`)
 
 **Status:** ❌ Not Started (JSON only)  
 **Priority:** Medium
@@ -685,6 +673,40 @@ print(results['budget_configuration']['per_section_limits']['traceability_bundle
 
 **Requirements:**
 - REQ-3.3 (Agentic System Integration) - ❌ TODO
+
+#### 11. Command-Line Interface
+
+**Status:** ❌ Not Started
+**Priority:** Low
+**Workaround:** Individual `peXX.py` scripts serve as entry points
+
+**Needed:**
+- Unified `prelim-exp` command with subcommands
+- `prelim-exp run <experiment>` - Run experiments
+- `prelim-exp validate` - Validate configuration
+- `prelim-exp analyze` - Run analysis
+- `prelim-exp report` - Generate reports
+- `prelim-exp list` - List experiments
+
+**Requirements:**
+- REQ-3.10 (Command-Line Interface) - ❌ TODO
+
+#### 12. Experiment Execution Engine Enhancements
+
+**Status:** ❌ Not Started
+**Priority:** Low
+
+**Parallel Execution (REQ-3.5.2.2):**
+- Run independent experiments concurrently
+- Would reduce total execution time for batch runs
+
+**Resume Capability (REQ-3.5.3.2):**
+- Save checkpoint state during long experiments
+- Resume from last checkpoint after interruption
+
+**Requirements:**
+- REQ-3.5.2.2 (Parallel Execution) - ❌ TODO
+- REQ-3.5.3.2 (Resume from Previous State) - ❌ TODO
 
 ---
 
@@ -957,16 +979,44 @@ tqdm>=4.65.0     # Progress bars
 
 ---
 
-## Known Issues
+## Known Issues and Gaps
 
-1. **No API Keys in Config** - config.yaml has placeholders
-   - Action: User must add real API keys
-   
-2. **Stub Experiments Return Placeholder Data**
+### Critical for Real API Usage
+
+1. **Rate Limiting Not Implemented** (REQ-3.2.5)
+   - Without retry logic, real API calls will fail on rate limits
+   - Must implement before OpenAI/Anthropic/Google providers
+   - Action: Add exponential backoff to provider base class
+
+2. **No API Keys in Config** - config.yaml has placeholders
+   - Action: User must add real API keys before using real providers
+
+### Blocking Specific Features
+
+3. **Agentic Integration Missing** (REQ-3.3)
+   - Blocks PE03 (Agent Selection) implementation
+   - Action: Implement agent abstraction layer in `pes/agents/`
+
+4. **Stub Experiments Return Placeholder Data** (PE03, PE06, PE08)
    - Action: Implement each experiment's logic
-   
-3. **No Real Statistical Tests Yet**
-   - Action: Implement analysis module
+   - PE06 and PE08 can be implemented independently
+   - PE03 requires agentic integration first
+
+### Not Implemented (Lower Priority)
+
+5. **Unified CLI Missing** (REQ-3.10)
+   - No `prelim-exp <command>` interface
+   - Workaround: Individual `peXX.py` scripts work as entry points
+
+6. **Report Generation JSON Only** (REQ-3.8.2-3.8.5)
+   - Markdown, HTML, PDF reports not implemented
+   - Visualizations (REQ-3.8.6) not implemented
+
+7. **Parallel Execution Missing** (REQ-3.5.2.2)
+   - All experiments run sequentially only
+
+8. **Resume Capability Missing** (REQ-3.5.3.2)
+   - Interrupted experiment runs must restart from beginning
 
 ---
 
