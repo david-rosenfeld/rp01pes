@@ -48,19 +48,30 @@ class BaseLLMProvider(ABC):
     def __init__(self, config: Dict[str, Any]):
         """
         Initialize LLM provider.
-        
+
         Args:
             config: Provider configuration dictionary containing:
                 - api_key: API authentication key
                 - model: Model identifier
                 - api_base: Optional API base URL
+                - max_retries: Maximum retry attempts (default: 5)
+                - retry_min_wait: Minimum wait between retries in seconds (default: 1.0)
+                - retry_max_wait: Maximum wait between retries in seconds (default: 60.0)
                 - Additional provider-specific parameters
         """
         self.config = config
         self.model = config.get('model')
         self.api_key = config.get('api_key')
         self.logger = get_logger(f"{self.__class__.__name__}")
-        
+
+        # Retry configuration (optional, defaults provided)
+        from .retry import RetryConfig
+        self.retry_config = RetryConfig(
+            max_attempts=config.get('max_retries', 5),
+            min_wait=config.get('retry_min_wait', 1.0),
+            max_wait=config.get('retry_max_wait', 60.0)
+        )
+
         # Validate required configuration
         self._validate_config()
     

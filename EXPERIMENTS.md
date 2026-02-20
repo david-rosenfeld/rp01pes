@@ -1,8 +1,8 @@
 # Preliminary Experiments Implementation Reference
 
-**Document Version:** 1.0  
-**Date:** 2025-11-03  
-**Status:** PE02 Complete, PE01/PE03-PE10 Framework Ready
+**Document Version:** 1.1
+**Date:** 2026-02-19
+**Status:** 7/10 Experiments Complete (PE01, PE02, PE04, PE05, PE07, PE09, PE10); PE03, PE06, PE08 Framework Ready
 
 ---
 
@@ -18,20 +18,24 @@ This document provides a comprehensive mapping between the 10 preliminary experi
 
 | ID | Experiment Name | Status | Research Plan Section | Requirements | Implementation Files |
 |----|----------------|--------|----------------------|--------------|---------------------|
-| PE01 | Language Effect Assessment | ⚠️ Stub | Preliminary Experiments | REQ-3.6.1 | `pe01_languageeffect.py`, `pe01.py` |
+| PE01 | Language Effect Assessment | ✅ Complete | Preliminary Experiments | REQ-3.6.1 | `pe01_languageeffect.py`, `pe01.py` |
 | PE02 | Model Selection - Prompt-Based | ✅ Complete | Preliminary Experiments | REQ-3.6.2 | `pe02_model_selection.py`, `pe02.py` |
 | PE03 | Agent Selection | ⚠️ Stub | Preliminary Experiments | REQ-3.6.3 | `pe03_agentselection.py`, `pe03.py` |
-| PE04 | Temperature Optimization | ⚠️ Stub | Model Parameters | REQ-3.6.4 | `pe04_temperatureoptimization.py`, `pe04.py` |
-| PE05 | Max Token Determination | ⚠️ Stub | Model Parameters | REQ-3.6.5 | `pe05_maxtokendetermination.py`, `pe05.py` |
+| PE04 | Temperature Optimization | ✅ Complete | Model Parameters | REQ-3.6.4 | `pe04_temperatureoptimization.py`, `pe04.py` |
+| PE05 | Max Token Determination | ✅ Complete | Model Parameters | REQ-3.6.5 | `pe05_maxtokendetermination.py`, `pe05.py` |
 | PE06 | Stop Sequence Definition | ⚠️ Stub | Model Parameters | REQ-3.6.6 | `pe06_stopsequence.py`, `pe06.py` |
-| PE07 | Prompting Strategy Testing | ⚠️ Stub | Prompting Strategies | REQ-3.6.7 | `pe07_promptstrategy.py`, `pe07.py` |
+| PE07 | Prompting Strategy Testing | ✅ Complete | Prompting Strategies | REQ-3.6.7 | `pe07_promptstrategy.py`, `pe07.py` |
 | PE08 | Control Condition Data | ⚠️ Stub | Control-Condition Data | REQ-3.6.8 | `pe08_controlcondition.py`, `pe08.py` |
-| PE09 | Token Budget Allocation | ⚠️ Stub | Prompting & Agent Orchestration | REQ-3.6.9 | `pe09_tokenbudget.py`, `pe09.py` |
-| PE10 | Power Analysis | ⚠️ Stub | Statistics & Results | REQ-3.6.10 | `pe10_poweranalysis.py`, `pe10.py` |
+| PE09 | Token Budget Allocation | ✅ Complete | Prompting & Agent Orchestration | REQ-3.6.9 | `pe09_tokenbudget.py`, `pe09.py` |
+| PE10 | Power Analysis | ✅ Complete | Statistics & Results | REQ-3.6.10 | `pe10_poweranalysis.py`, `pe10.py` |
 
 **Legend:**
 - ✅ Complete: Fully implemented and tested
 - ⚠️ Stub: Framework in place with detailed implementation guide
+
+**Update History:**
+- 2025-11-03: Initial document (PE02 complete)
+- 2026-02-19: Updated status to reflect 7/10 experiments complete
 
 ---
 
@@ -66,25 +70,18 @@ The research plan identifies that two datasets (Albergate and SMOS) contain requ
 #### Implementation Details
 
 **Files:**
-- `pes/experiments/pe01_languageeffect.py` - Experiment class implementation
+- `pes/experiments/pe01_languageeffect.py` - Experiment class implementation (589 lines)
 - `pe01.py` - Standalone executable program
 
-**Implementation Status:** ⚠️ Framework Ready
+**Implementation Status:** ✅ Complete
 
-**Current State:**
-- Class structure complete, inherits from `BaseExperiment`
-- Configuration loading implemented
-- Detailed TODO comments guide full implementation
-- Framework follows PE02 pattern
-
-**Implementation Steps (from code TODOs):**
-1. Load Italian and English requirement versions from Albergate/SMOS datasets
-2. Select 2-3 models for testing (from PE02 results)
-3. Execute same tasks on both language variants
-4. Compute performance metrics for each variant
-5. Run paired statistical test (t-test or Wilcoxon) to compare performance
-6. Generate recommendation based on statistical significance
-7. Output decision: use Italian, translate, or analyze separately
+**Implementation Details:**
+- Full 7-step workflow implementing REQ-3.6.1.1 through REQ-3.6.1.7
+- Integrates with `pes.datasets` loader for Albergate/SMOS
+- Uses `pes.analysis` module for statistical tests (paired t-test, Wilcoxon)
+- Calculates Cohen's d effect sizes
+- Generates data-driven recommendations
+- Works with MockLLMProvider for testing; ready for real providers
 
 **Configuration Section:**
 ```yaml
@@ -308,26 +305,18 @@ The research plan specifies that temperature is a critical LLM parameter affecti
 #### Implementation Details
 
 **Files:**
-- `pes/experiments/pe04_temperatureoptimization.py` - Experiment class implementation
+- `pes/experiments/pe04_temperatureoptimization.py` - Experiment class implementation (556 lines)
 - `pe04.py` - Standalone executable program
 
-**Implementation Status:** ⚠️ Framework Ready
+**Implementation Status:** ✅ Complete
 
-**Current State:**
-- Class structure complete, inherits from `BaseExperiment`
-- Configuration loading implemented
-- Detailed TODO comments guide full implementation
-- Framework follows PE02 pattern
-
-**Implementation Steps (from code TODOs):**
-1. Categorize TaskTypes as correctness-critical or exploratory
-2. Load representative task samples for each TaskType
-3. Define temperature ranges based on task category
-4. For each TaskType and temperature value, execute sample tasks
-5. Collect task-specific performance metrics (accuracy, completeness, etc.)
-6. Analyze impact of temperature on each metric
-7. Select optimal temperature (highest performance) per TaskType
-8. Generate configuration file with recommended temperatures
+**Implementation Details:**
+- Full 6-step workflow implementing REQ-3.6.4.1 through REQ-3.6.4.6
+- Categorizes TaskTypes as correctness-critical vs exploratory
+- Tests temperature ranges (0.0-0.8 for correctness, 0.4-1.2 for exploratory)
+- Performs ANOVA to detect significant temperature effects
+- Recommends optimal temperature per TaskType
+- Works with MockLLMProvider (temperature-aware accuracy)
 
 **Configuration Section:**
 ```yaml
@@ -397,24 +386,19 @@ The research plan notes that setting max_tokens limits response length. The plan
 #### Implementation Details
 
 **Files:**
-- `pes/experiments/pe05_maxtokendetermination.py` - Experiment class implementation
+- `pes/experiments/pe05_maxtokendetermination.py` - Experiment class implementation (460 lines)
 - `pe05.py` - Standalone executable program
+- `test_pe05.py` - Test suite (3 tests)
 
-**Implementation Status:** ⚠️ Framework Ready
+**Implementation Status:** ✅ Complete
 
-**Current State:**
-- Class structure complete, inherits from `BaseExperiment`
-- Configuration loading implemented
-- Detailed TODO comments guide full implementation
-- Framework follows PE02 pattern
-
-**Implementation Steps (from code TODOs):**
-1. Collect output samples from various task executions across all TaskTypes
-2. Measure token lengths for each output using tokenizer
-3. Compute distribution statistics: mean, median, std dev, 95th percentile, maximum
-4. Assess truncation risk at various potential token limits
-5. Generate recommendation: use provider default OR set specific limit per TaskType
-6. Document rationale for recommendation with statistical support
+**Implementation Details:**
+- Measures output token lengths from sample tasks
+- Computes distribution statistics (mean, median, 95th/99th percentiles)
+- Assesses truncation risk at various limits (100, 200, 300, 500, 1000, 2000)
+- Recommends specific limits or "no limit" based on variability
+- Integrates with `pes.datasets` loader for realistic task samples
+- Token estimation without external tokenizer libraries
 
 **Configuration Section:**
 ```yaml
@@ -567,29 +551,19 @@ The research plan initially proposed one-shot with chain-of-thought prompting bu
 #### Implementation Details
 
 **Files:**
-- `pes/experiments/pe07_promptstrategy.py` - Experiment class implementation
+- `pes/experiments/pe07_promptstrategy.py` - Experiment class implementation (598 lines)
 - `pe07.py` - Standalone executable program
 
-**Implementation Status:** ⚠️ Framework Ready
+**Implementation Status:** ✅ Complete
 
-**Current State:**
-- Class structure complete, inherits from `BaseExperiment`
-- Configuration loading implemented
-- Detailed TODO comments guide full implementation
-- Framework follows PE02 pattern
-
-**Implementation Steps (from code TODOs):**
-1. Define strategy variants: zero-shot, zero-shot+CoT, few-shot+CoT
-2. Create prompt templates for each strategy incorporating:
-   - Persona (role description)
-   - Task instruction
-   - Requirement/use case text
-   - Output format specification
-3. For few-shot strategies, select representative examples
-4. Execute sample tasks using each strategy
-5. Compare performance metrics across strategies
-6. Select strategy with best overall performance
-7. Document selected strategy with example prompts for each TaskType
+**Implementation Details:**
+- Tests zero-shot, zero-shot + CoT, and optionally few-shot + CoT strategies
+- Creates structured prompts with persona, instruction, requirement, output format
+- Executes sample tasks with each strategy
+- Performs ANOVA to compare strategies statistically
+- Selects optimal strategy based on overall accuracy
+- Generates example prompts for each TaskType
+- Integrates with `pes.datasets` and `pes.analysis` modules
 
 **Configuration Section:**
 ```yaml
@@ -754,26 +728,18 @@ The research plan specifies dividing the token budget into sections (persona, in
 #### Implementation Details
 
 **Files:**
-- `pes/experiments/pe09_tokenbudget.py` - Experiment class implementation
+- `pes/experiments/pe09_tokenbudget.py` - Experiment class implementation (633 lines)
 - `pe09.py` - Standalone executable program
 
-**Implementation Status:** ⚠️ Framework Ready
+**Implementation Status:** ✅ Complete
 
-**Current State:**
-- Class structure complete, inherits from `BaseExperiment`
-- Configuration loading implemented
-- Detailed TODO comments guide full implementation
-- Framework follows PE02 pattern
-
-**Implementation Steps (from code TODOs):**
-1. Measure typical token counts for each prompt section using real data
-2. Design initial allocation schemes (e.g., 15% persona, 20% instruction, 30% requirement, 25% traceability, 10% output)
-3. Convert percentages to absolute token limits
-4. Test schemes with real data from all datasets
-5. Check for truncation of critical information
-6. If truncation detected, adjust allocation and retest
-7. Validate final scheme across diverse samples
-8. Output finalized token budget allocation
+**Implementation Details:**
+- Measures token usage for 6 prompt sections (persona, instruction, requirement, traceability_bundle, file_list, output_specification)
+- Designs 3 allocation schemes (proportional, context-focused, balanced)
+- Tests schemes for truncation risk with real dataset data
+- Adjusts allocations if truncation exceeds 5% threshold
+- Outputs finalized budget configuration with per-section limits
+- Integrates with `pes.datasets` for realistic measurements
 
 **Configuration Section:**
 ```yaml
@@ -847,25 +813,20 @@ The research plan requires statistical power analysis to determine sample sizes 
 #### Implementation Details
 
 **Files:**
-- `pes/experiments/pe10_poweranalysis.py` - Experiment class implementation
+- `pes/experiments/pe10_poweranalysis.py` - Experiment class implementation (415 lines)
 - `pe10.py` - Standalone executable program
+- `test_pe10.py` - Test suite (4 tests)
 
-**Implementation Status:** ⚠️ Framework Ready
+**Implementation Status:** ✅ Complete
 
-**Current State:**
-- Class structure complete, inherits from `BaseExperiment`
-- Configuration loading implemented
-- Detailed TODO comments guide full implementation
-- Framework follows PE02 pattern
-
-**Implementation Steps (from code TODOs):**
-1. Collect pilot data for all TaskTypes (small sample runs)
-2. For each TaskType, compute Δ scores (treatment - control)
-3. Calculate variance of Δ scores (needed for power calculation)
-4. Define minimum practically significant effect sizes per TaskType
-5. Use power calculation formula or library (scipy.stats.power) to compute sample size
-6. Apply inflation factor (10-20%) to account for unusable runs
-7. Output recommended sample sizes per TaskType
+**Implementation Details:**
+- Full 6-step workflow implementing REQ-3.6.10.1 through REQ-3.6.10.6
+- Estimates variance from pilot data (Δ scores)
+- Calculates sample sizes for power=0.80, α=0.05
+- Applies configurable inflation factor (10-20%) for failures
+- Generates per-TaskType recommendations
+- Pure statistical calculation (no LLM calls required)
+- Integrates with `pes.analysis.power_analysis` module
 
 **Configuration Section:**
 ```yaml
@@ -934,45 +895,40 @@ All 10 preliminary experiments demonstrate **100% alignment** across three dimen
 - ✅ All experiments inherit from `BaseExperiment` base class
 - ✅ Modular design supports independent development and testing
 
-**Current Status:**
-- ✅ 1/10 experiments complete (PE02)
-- ⚠️ 9/10 experiments framework-ready with detailed implementation guides
+**Current Status (Updated 2026-02-19):**
+- ✅ 7/10 experiments complete (PE01, PE02, PE04, PE05, PE07, PE09, PE10)
+- ⚠️ 3/10 experiments framework-ready (PE03, PE06, PE08)
 - ✅ Core infrastructure fully operational
 - ✅ Configuration system tested and working
-- ⚠️ Real LLM providers not yet implemented (needed for all experiments)
-- ⚠️ Dataset management not yet implemented (needed for experiments requiring real data)
+- ✅ Dataset management complete (all 6 COMET datasets loading)
+- ✅ Statistical analysis module complete (21 functions)
+- ⚠️ Real LLM providers not yet implemented (experiments work with MockLLMProvider)
 
 ### Development Roadmap
 
-**Immediate Dependencies** (blocking all experiments):
-1. Real LLM provider implementations (OpenAI, Anthropic, Google)
-2. Dataset management system (COMET dataset loaders)
+**Remaining Work:**
+1. Real LLM provider implementations (OpenAI, Anthropic, Google, Ollama)
+2. PE03 (Agent Selection) - Requires agentic integration layer
+3. PE06 (Stop Sequence) - Can be implemented independently
+4. PE08 (Control Condition) - Can be implemented independently
+5. Report generation (Markdown, HTML, LaTeX)
 
-**Priority Order for Experiment Implementation:**
-1. **PE01** (Language Effect) - Informs whether Italian datasets need translation
-2. **PE04** (Temperature) - Determines optimal parameter for all TaskTypes
-3. **PE10** (Power Analysis) - Determines required sample sizes for main study
-4. **PE07** (Prompt Strategy) - Determines optimal prompting approach
-5. **PE03** (Agent Selection) - Selects agentic systems for main study
-6. **PE08** (Control Condition) - Determines baseline comparison approach
-7. **PE05** (Max Tokens) - Determines output length limits
-8. **PE06** (Stop Sequence) - Defines output termination sequences
-9. **PE09** (Token Budget) - Finalizes prompt section allocations
+**Note:** PE03 depends on agentic integration (Phase 3 in COMPLETION_PLAN.md). PE06 and PE08 can be implemented immediately.
 
 ### Execution Sequence
 
 The research plan implicitly defines execution dependencies:
 
 ```
-PE02 (Model Selection)
+✅ PE02 (Model Selection) - COMPLETE
   ↓
-PE01 (Language Effect) + PE03 (Agent Selection)
+✅ PE01 (Language Effect) - COMPLETE | ⚠️ PE03 (Agent Selection) - NEEDS AGENTIC LAYER
   ↓
-PE04 (Temperature) + PE07 (Prompt Strategy)
+✅ PE04 (Temperature) - COMPLETE | ✅ PE07 (Prompt Strategy) - COMPLETE
   ↓
-PE08 (Control Condition) + PE09 (Token Budget)
+⚠️ PE08 (Control Condition) - STUB | ✅ PE09 (Token Budget) - COMPLETE
   ↓
-PE05 (Max Tokens) + PE06 (Stop Sequence)
+✅ PE05 (Max Tokens) - COMPLETE | ⚠️ PE06 (Stop Sequence) - STUB
   ↓
 PE10 (Power Analysis)
   ↓
@@ -1083,21 +1039,25 @@ cat logs/ModelSelectionExperiment.PE02_*.log
 
 ## Conclusion
 
-The Preliminary Experiments System successfully implements all 10 experiments specified in the research plan with perfect alignment to requirements. The system architecture supports the complete research workflow:
+The Preliminary Experiments System has achieved **70% completion** with 7 of 10 experiments fully implemented and tested. The system architecture supports the complete research workflow:
 
-1. **PE02** provides a fully functional reference implementation
-2. **PE01, PE03-PE10** provide complete frameworks ready for implementation
+1. **PE01, PE02, PE04, PE05, PE07, PE09, PE10** are fully functional (tested with MockLLMProvider)
+2. **PE03, PE06, PE08** have complete frameworks ready for implementation
 3. All experiments follow consistent patterns and share infrastructure
 4. Configuration-driven design enables rapid experimentation and modification
 5. Modular architecture supports independent development and testing
+6. **Dataset management complete** - all 6 COMET datasets loading
+7. **Statistical analysis complete** - 21 functions for hypothesis testing, effect sizes, power analysis
 
 The system is well-positioned to execute the complete preliminary experiment phase of the LLM traceability research project, providing empirically-grounded configuration decisions for the main experimental study.
 
 **Next Steps:**
-1. Implement real LLM providers (OpenAI, Anthropic, Google)
-2. Implement dataset management for COMET datasets
-3. Execute PE01-PE10 in priority order
-4. Use results to configure main experiments
+1. Implement real LLM providers (OpenAI, Anthropic, Google, Ollama)
+2. Complete PE06 (Stop Sequence) and PE08 (Control Condition)
+3. Implement agentic integration layer (required for PE03)
+4. Complete PE03 (Agent Selection)
+5. Execute experiments with real models
+6. Use results to configure main experiments
 
 ---
 
