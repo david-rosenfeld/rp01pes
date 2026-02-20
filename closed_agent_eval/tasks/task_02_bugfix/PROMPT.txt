@@ -1,0 +1,6 @@
+There is a bug in the paginate function. When requesting page 1 with a list [1,2,3,4,5] and per_page=2, it should return items [1, 2] but currently returns incorrect items.
+
+Fix the bug so that:
+- paginate([1,2,3,4,5], page=1, per_page=2) returns items [1, 2]
+- paginate([1,2,3,4,5], page=2, per_page=2) returns items [3, 4]
+- paginate([1,2,3,4,5], page=3, per_page=2) returns items [5]

@@ -1,0 +1,5 @@
+Add documentation to this cache module:
+1. Add a module-level docstring explaining what this module provides
+2. Add a class docstring for TTLCache explaining its purpose and usage
+3. Add docstrings for all public methods (get, set, delete, clear)
+4. Use Google-style docstring format with Args, Returns, and Raises sections where applicable

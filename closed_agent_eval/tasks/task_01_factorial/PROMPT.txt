@@ -1,0 +1,6 @@
+Add a factorial function to this file. The function should:
+1. Be named `factorial`
+2. Take a single integer parameter `n`
+3. Return the factorial of n (n!)
+4. Handle edge cases: factorial(0) = 1, raise ValueError for negative inputs
+5. Include a docstring following the existing style

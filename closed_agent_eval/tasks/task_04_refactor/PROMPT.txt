@@ -1,0 +1,6 @@
+Refactor this code to reduce duplication. Extract common report formatting logic into a helper function that both generate_sales_report and generate_inventory_report can use.
+
+Requirements:
+- Create a helper function for the common formatting pattern
+- Both original functions must produce identical output as before
+- The external API (function signatures) must remain unchanged

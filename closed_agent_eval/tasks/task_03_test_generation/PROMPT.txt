@@ -1,0 +1,6 @@
+Create a test file `test_validator.py` using pytest. Include tests for all three functions:
+1. validate_email - test valid emails, invalid emails, and edge cases
+2. validate_phone - test valid formats and invalid formats
+3. validate_password - test each validation rule individually and in combination
+
+Include at least 3 test cases for each function.
