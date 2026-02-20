@@ -7,6 +7,7 @@ This module provides comprehensive statistical analysis functions including:
 - Effect size calculations (Cohen's d, Cliff's Delta)
 - Power analysis and sample size determination
 - Correlation analysis
+- Publication-quality report generation (Markdown, HTML, LaTeX)
 
 All functions return dictionaries for easy serialization and reporting.
 
@@ -50,6 +51,9 @@ from .correlation import (
     correlation_matrix
 )
 
+# Report generation submodule
+from . import reports
+
 # Define public API
 __all__ = [
     # Descriptive statistics
@@ -82,4 +86,7 @@ __all__ = [
     'pearson_correlation',
     'spearman_correlation',
     'correlation_matrix',
+
+    # Reports submodule
+    'reports',
 ]
