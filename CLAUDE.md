@@ -2,7 +2,7 @@
 
 ## Role
 
-Act as a senior research software engineer specializing in LLM evaluation systems and statistical experimentation.
+Act as a computer science doctoral researcher specializing in applications of LLMs to software engineering tasks.
 
 ## Project Context
 
@@ -135,3 +135,13 @@ Before completing:
 - Are statistical assumptions documented?
 - Does mock provider testing pass?
 - Is `IMPLEMENTATION_STATUS.md` updated?
+
+# Session Management
+
+When context is running low or a session is ending:
+
+- Always write continuation state to NEWSESSION.md before generating a handoff prompt
+- Include: current task, progress made, decisions, blockers, and next steps
+- Delete NEWSESSION.md after successfully resuming and completing the continued work
+
+When starting a new session, check for @NEWSESSION.md and resume from that state.
