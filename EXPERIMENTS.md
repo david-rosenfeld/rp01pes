@@ -1,8 +1,8 @@
 # Preliminary Experiments Implementation Reference
 
-**Document Version:** 1.1
-**Date:** 2026-02-19
-**Status:** 7/10 Experiments Complete (PE01, PE02, PE04, PE05, PE07, PE09, PE10); PE03, PE06, PE08 Framework Ready
+**Document Version:** 1.2
+**Date:** 2026-02-20
+**Status:** 9/10 Experiments Complete (PE01, PE02, PE04-PE10); PE03 Deferred
 
 ---
 
@@ -20,22 +20,24 @@ This document provides a comprehensive mapping between the 10 preliminary experi
 |----|----------------|--------|----------------------|--------------|---------------------|
 | PE01 | Language Effect Assessment | ✅ Complete | Preliminary Experiments | REQ-3.6.1 | `pe01_languageeffect.py`, `pe01.py` |
 | PE02 | Model Selection - Prompt-Based | ✅ Complete | Preliminary Experiments | REQ-3.6.2 | `pe02_model_selection.py`, `pe02.py` |
-| PE03 | Agent Selection | ⚠️ Stub | Preliminary Experiments | REQ-3.6.3 | `pe03_agentselection.py`, `pe03.py` |
+| PE03 | Agent Selection | ⏸️ Deferred | Preliminary Experiments | REQ-3.6.3 | `pe03_agentselection.py`, `pe03.py` |
 | PE04 | Temperature Optimization | ✅ Complete | Model Parameters | REQ-3.6.4 | `pe04_temperatureoptimization.py`, `pe04.py` |
 | PE05 | Max Token Determination | ✅ Complete | Model Parameters | REQ-3.6.5 | `pe05_maxtokendetermination.py`, `pe05.py` |
-| PE06 | Stop Sequence Definition | ⚠️ Stub | Model Parameters | REQ-3.6.6 | `pe06_stopsequence.py`, `pe06.py` |
+| PE06 | Stop Sequence Definition | ✅ Complete | Model Parameters | REQ-3.6.6 | `pe06_stopsequence.py`, `pe06.py` |
 | PE07 | Prompting Strategy Testing | ✅ Complete | Prompting Strategies | REQ-3.6.7 | `pe07_promptstrategy.py`, `pe07.py` |
-| PE08 | Control Condition Data | ⚠️ Stub | Control-Condition Data | REQ-3.6.8 | `pe08_controlcondition.py`, `pe08.py` |
+| PE08 | Control Condition Data | ✅ Complete | Control-Condition Data | REQ-3.6.8 | `pe08_controlcondition.py`, `pe08.py` |
 | PE09 | Token Budget Allocation | ✅ Complete | Prompting & Agent Orchestration | REQ-3.6.9 | `pe09_tokenbudget.py`, `pe09.py` |
 | PE10 | Power Analysis | ✅ Complete | Statistics & Results | REQ-3.6.10 | `pe10_poweranalysis.py`, `pe10.py` |
 
 **Legend:**
 - ✅ Complete: Fully implemented and tested
+- ⏸️ Deferred: Implementation blocked pending external dependencies
 - ⚠️ Stub: Framework in place with detailed implementation guide
 
 **Update History:**
 - 2025-11-03: Initial document (PE02 complete)
 - 2026-02-19: Updated status to reflect 7/10 experiments complete
+- 2026-02-20: PE06 and PE08 implemented; PE03 deferred; 9/10 experiments complete
 
 ---
 

@@ -1,8 +1,8 @@
 # Implementation Status - Preliminary Experiments System
 
-**Last Updated:** 2026-02-19
-**Session:** Phase 1 LLM Providers Complete (Session 6)
-**Overall Status:** Core System + Dataset Management + Statistical Analysis + 7 Experiments + Real LLM Providers Complete (~80% of total system)
+**Last Updated:** 2026-02-20
+**Session:** Phase 2 Experiments Complete (Session 6)
+**Overall Status:** Core System + Dataset Management + Statistical Analysis + 9 Experiments + Real LLM Providers Complete (~90% of total system)
 
 > **Note:** This document is the single source of truth for implementation status. See `CONTINUATION_GUIDE.md` for development workflow guidance.
 
@@ -24,7 +24,9 @@
 | PE05 (Max Token) | ✅ Complete | High | Fully implemented & tested |
 | PE07 (Prompt Strategy) | ✅ Complete | High | Fully implemented |
 | PE09 (Token Budget) | ✅ Complete | High | Fully implemented |
-| PE03, PE06, PE08 | ⚠️ Stub | Medium | Framework only, logic needed |
+| PE06 (Stop Sequence) | ✅ Complete | High | Fully implemented |
+| PE08 (Control Condition) | ✅ Complete | High | Fully implemented |
+| PE03 (Agent Selection) | ⏸️ Deferred | Low | Awaiting viable agent integration path |
 | Report Generation | ❌ TODO | Medium | JSON only; Markdown/HTML/PDF not implemented |
 | Agentic Integration | ❌ TODO | Low | For PE03; blocks REQ-3.3 |
 | Command-Line Interface | ❌ TODO | Low | REQ-3.10; using individual scripts as workaround |
