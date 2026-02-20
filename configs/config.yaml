@@ -96,9 +96,9 @@ experiments:
   # PE01: Language Effect Assessment
   language_effect:
     enabled: true
-    datasets: ["albergate", "smos"]  # Italian datasets
-    models: ["gpt4", "claude_sonnet"]
-    task_type: "bug_fix"  # Representative task
+    dataset: "albergate"  # Italian dataset with language variants
+    models: ["GPT-4", "Claude-Sonnet"]  # References to model_selection.candidate_models (mock)
+    task_type: "trace"  # Representative task
     sample_size: 10
     significance_level: 0.05
   
