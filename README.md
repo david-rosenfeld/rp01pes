@@ -2,330 +2,235 @@
 
 A modular Python framework for executing preliminary experiments investigating the impact of requirement traceability data on Large Language Model performance in specification-driven coding tasks.
 
-**Version:** 1.5 (Phase 4 Complete)
-**Status:** 7 of 10 experiments fully implemented (~70% complete)
-**Date:** 2025-12-03
+**Status:** 9 of 10 experiments implemented and functional
+**Python:** 3.9+
+
+---
+
+## Overview
+
+PES runs 10 preliminary experiments (PE01--PE10) that determine optimal LLM configurations for a larger traceability study. The experiments cover language selection, model evaluation, temperature tuning, token limits, stop sequences, prompting strategies, control conditions, token budgets, and statistical power analysis.
+
+PE03 (Agent Selection) is deferred pending a viable agentic integration path. The remaining 9 experiments execute end-to-end with either a built-in mock provider or real LLM backends.
 
 ---
 
 ## Quick Start
 
-### Prerequisites
+### 1. Install Dependencies
 
 ```bash
-# Python 3.9 or higher
-python --version
-
-# Install dependencies
-pip install PyYAML numpy scipy
+pip install -r requirements.txt
 ```
 
-### Running Experiments
+This installs: PyYAML, numpy, scipy, openai, anthropic, google-genai, and ollama.
 
-All experiments follow the same command pattern:
+### 2. Run All Experiments (Mock Provider)
+
+The default configuration uses the mock provider, which requires no API keys and produces realistic traceability responses suitable for validating the experimental pipeline.
 
 ```bash
-python peXX.py configs/config.yaml
+python run_all_experiments.py configs/config.yaml
 ```
 
-### Available Experiments (7/10)
+This executes all 9 implemented experiments sequentially, prints a summary table, and saves a timestamped batch report to `results/`.
 
-#### ✅ **Working Experiments**
+### 3. Run a Single Experiment
 
-```bash
-# PE02 - Model Selection (Reference Implementation)
-python pe02.py configs/config.yaml
-
-# PE01 - Language Effect Assessment
-python pe01.py configs/config.yaml
-
-# PE04 - Temperature Optimization
-python pe04.py configs/config.yaml
-
-# PE05 - Max Token Determination
-python pe05.py configs/config.yaml
-
-# PE07 - Prompt Strategy Comparison
-python pe07.py configs/config.yaml
-
-# PE09 - Token Budget Allocation
-python pe09.py configs/config.yaml
-
-# PE10 - Power Analysis (Statistical)
-python pe10.py configs/config.yaml
-```
-
-#### ⚠️ **Stub Experiments** (Framework only)
+Each experiment has a standalone entry point:
 
 ```bash
-# PE03 - Agent Selection (requires agentic system)
-# PE06 - Stop Sequence Determination
-# PE08 - Control Condition Selection
-```
-
-### Viewing Results
-
-```bash
-# List all results
-ls results/
-
-# View specific experiment result (JSON)
-cat results/PowerAnalysisExperiment_PE10_*.json
-
-# View experiment logs
-cat logs/PowerAnalysisExperiment.PE10_*.log
-
-# Watch logs in real-time
-tail -f logs/*.log
+python pe01.py configs/config.yaml   # PE01: Language Effect Assessment
+python pe02.py configs/config.yaml   # PE02: Model Selection
+python pe04.py configs/config.yaml   # PE04: Temperature Optimization
+python pe05.py configs/config.yaml   # PE05: Max Token Determination
+python pe06.py configs/config.yaml   # PE06: Stop Sequence Definition
+python pe07.py configs/config.yaml   # PE07: Prompting Strategy Testing
+python pe08.py configs/config.yaml   # PE08: Control Condition Determination
+python pe09.py configs/config.yaml   # PE09: Token Budget Allocation
+python pe10.py configs/config.yaml   # PE10: Power Analysis
 ```
 
 ---
 
-## What's Included
+## Using Real LLM Providers
 
-### ✅ Complete and Functional
+PES supports four real LLM backends in addition to the mock provider:
 
-**Core Infrastructure:**
-- Configuration management (YAML/JSON)
-- Experiment-aware logging system
-- Exception hierarchy
-- Base experiment class with template pattern
+| Provider | Package | API Key Environment Variable |
+|----------|---------|------------------------------|
+| OpenAI | `openai` | `OPENAI_API_KEY` |
+| Anthropic | `anthropic` | `ANTHROPIC_API_KEY` |
+| Google Gemini | `google-genai` | `GOOGLE_API_KEY` |
+| Ollama (local) | `ollama` | None (runs locally) |
 
-**LLM Integration:**
-- Abstract provider interface
-- Mock provider (realistic traceability responses)
-- Provider factory pattern
+To switch from mock to a real provider, edit the `model:` blocks in `configs/config.yaml`. For example:
 
-**Dataset Management:**
-- All 6 COMET datasets (Albergate, EBT, LibEST, eTOUR, SMOS, iTrust)
-- Ground truth traceability link parsing
-- Traceability bundle generation with token budgets
-- Italian and English text support
+```yaml
+model:
+  provider: "openai"
+  model: "gpt-4"
+  name: "GPT-4"
+```
 
-**Statistical Analysis:**
-- Descriptive statistics (mean, median, std, quartiles)
-- Hypothesis tests (t-test, Wilcoxon, ANOVA)
-- Effect sizes (Cohen's d, Cliff's Delta)
-- Power analysis for sample size determination
-- Correlation analysis (Pearson, Spearman)
+For local inference with no API keys, Ollama is the recommended path. See [OLLAMA.md](OLLAMA.md) for a detailed setup guide.
 
-**Preliminary Experiments (7/10):**
-- PE02: Model Selection
-- PE01: Language Effect Assessment
-- PE04: Temperature Optimization
-- PE05: Max Token Determination
-- PE07: Prompt Strategy Comparison
-- PE09: Token Budget Allocation
-- PE10: Power Analysis
-
-### ⚠️ Partial/Stub Implementations
-
-- PE03: Agent Selection (requires agentic system integration)
-- PE06: Stop Sequence Determination
-- PE08: Control Condition Selection
-
-### ❌ TODO
-
-- Real LLM providers (OpenAI, Anthropic, Google)
-- Report generation (Markdown, HTML, PDF)
-- Agentic system integration
+See [configs/CONFIGURATION.md](configs/CONFIGURATION.md) for the full configuration reference.
 
 ---
 
-## Experiment Descriptions
+## Experiments
 
-### PE01: Language Effect Assessment
-Compares Italian vs English requirement text to determine optimal language for traceability tasks.
+| ID | Name | Description | LLM Calls? |
+|----|------|-------------|------------|
+| PE01 | Language Effect Assessment | Compares Italian vs English requirement text to determine optimal language | Yes |
+| PE02 | Model Selection | Evaluates candidate LLMs on benchmark tasks and selects optimal models per category | Yes |
+| PE03 | Agent Selection | Evaluates agentic coding systems (deferred) | -- |
+| PE04 | Temperature Optimization | Determines optimal temperature settings per task type (trace, recover, fill) | Yes |
+| PE05 | Max Token Determination | Analyzes output length distributions to recommend max_tokens limits | Yes |
+| PE06 | Stop Sequence Definition | Identifies and validates stop sequences per task type | Yes |
+| PE07 | Prompt Strategy Comparison | Compares zero-shot, chain-of-thought, and few-shot strategies | Yes |
+| PE08 | Control Condition Determination | Selects control conditions for prompt-based and agentic approaches | Yes |
+| PE09 | Token Budget Allocation | Allocates token budget across prompt sections | No (dataset analysis) |
+| PE10 | Power Analysis | Calculates required sample sizes for the main study | No (statistical) |
 
-**Usage:**
-```bash
-python pe01.py configs/config.yaml
+---
+
+## Output
+
+### Results
+
+JSON files are saved to `results/` after each experiment run:
+
+```
+results/
+  LanguageEffectExperiment_PE01_20260226_091055.json
+  ModelSelectionExperiment_PE02_20260226_091055.json
+  ...
+  batch_run_20260226_091054.json          # Summary from run_all_experiments.py
 ```
 
-### PE02: Model Selection
-Evaluates candidate LLM models on benchmark tasks and selects optimal models per category.
+Each JSON file contains the full experiment data: configuration used, raw results, statistical analysis, and recommendations.
 
-**Usage:**
-```bash
-python pe02.py configs/config.yaml
+### Logs
+
+Detailed logs for each run are saved to `logs/`:
+
+```
+logs/
+  TemperatureOptimizationExperiment.PE04_20260226_091055.log
 ```
 
-### PE04: Temperature Optimization
-Determines optimal temperature settings for different TaskTypes (trace, recover, fill).
+---
 
-**Usage:**
-```bash
-python pe04.py configs/config.yaml
-```
+## Datasets
 
-### PE05: Max Token Determination
-Analyzes output length distributions to recommend max_tokens settings per TaskType.
+PES uses the six COMET datasets for requirement traceability tasks:
 
-**Usage:**
-```bash
-python pe05.py configs/config.yaml
-```
+| Dataset | Language | Requirements | Source Files | Links |
+|---------|----------|-------------|--------------|-------|
+| Albergate | Italian | 17 | 55 | 16 |
+| EBT | English | 41 | 50 | 33 |
+| LibEST | English | 52 | 35 | 47 |
+| eTOUR | English | 58 | 116 | 58 |
+| SMOS | Italian | 67 | 100 | 67 |
+| iTrust | English | 131 | -- | -- |
 
-### PE07: Prompt Strategy Comparison
-Compares zero-shot, chain-of-thought, and few-shot prompting strategies.
-
-**Usage:**
-```bash
-python pe07.py configs/config.yaml
-```
-
-### PE09: Token Budget Allocation
-Determines optimal allocation of token budget across prompt sections (persona, instruction, context, etc.).
-
-**Usage:**
-```bash
-python pe09.py configs/config.yaml
-```
-
-### PE10: Power Analysis
-Calculates required sample sizes using statistical power analysis (power=0.80, α=0.05).
-
-**Usage:**
-```bash
-python pe10.py configs/config.yaml
-```
+Datasets are stored in the `datasets/` directory. See [pes/datasets/README.md](pes/datasets/README.md) for loading details and API documentation.
 
 ---
 
 ## Testing
 
-### Run Test Suites
-
 ```bash
-# Dataset module tests
-python test_datasets.py
-
-# Statistical analysis tests
-python test_analysis.py
-
-# PE10 tests
-python test_pe10.py
-
-# PE05 tests
-python test_pe05.py
+python test_datasets.py    # Dataset module tests
+python test_analysis.py    # Statistical analysis tests
+python test_pe10.py        # PE10-specific tests
+python test_pe05.py        # PE05-specific tests
 ```
 
-### What's Tested
+All 9 implemented experiments can also be validated with the mock provider:
 
-- ✅ All 6 COMET datasets load successfully
-- ✅ 21 statistical analysis functions
-- ✅ All 7 working experiments with mock provider
-- ✅ Traceability bundle generation
-- ✅ Token budget enforcement
+```bash
+python run_all_experiments.py configs/config.yaml
+```
 
 ---
 
-## Documentation
+## Project Structure
 
-- **📖 README.md** (this file) - Quick start and command reference
-- **📋 IMPLEMENTATION_STATUS.md** - Detailed status, what's done, next steps
-- **📖 ARCHITECTURE.md** - System design and components
-- **📖 pes/datasets/README.md** - Dataset module user guide
+The codebase is organized as a Python package (`pes/`) with standalone experiment runners at the project root.
+
+```
+pe01.py .. pe10.py              Standalone experiment entry points
+run_all_experiments.py          Batch runner for all experiments
+configs/config.yaml             Central configuration file
+
+pes/
+  core/                         Configuration, logging, base classes
+  llm/                          LLM provider abstraction (mock + 4 real)
+  datasets/                     COMET dataset loading and bundle generation
+  experiments/                  Experiment implementations (PE01-PE10)
+  analysis/                     Statistical analysis and report generation
+  agents/                       Agentic integration (Aider adapter, base agent)
+```
+
+For the complete file tree and descriptions, see [FILE_STRUCTURE.md](FILE_STRUCTURE.md).
 
 ---
 
 ## Dependencies
 
-### Required (Installed)
+All dependencies are listed in `requirements.txt`:
 
 ```
-PyYAML>=6.0.1      # Configuration management
-numpy>=1.24.0      # Numerical operations
-scipy>=1.10.0      # Statistical analysis
+PyYAML>=6.0.1          # Configuration management
+numpy>=1.24.0          # Numerical operations
+scipy>=1.10.0          # Statistical analysis
+openai>=1.0.0          # OpenAI LLM provider
+anthropic>=0.8.0       # Anthropic LLM provider
+google-genai>=1.0.0    # Google Gemini LLM provider
+ollama>=0.4.0          # Ollama local model provider
 ```
 
-### Optional (Future)
-
-```
-openai>=1.0.0              # OpenAI provider
-anthropic>=0.8.0           # Anthropic provider
-google-generativeai>=0.3.0 # Google provider
-matplotlib>=3.7.0          # Visualization
-seaborn>=0.12.0            # Statistical plots
-```
+Only PyYAML, numpy, and scipy are required for mock-provider runs. The LLM provider packages are only needed when using the corresponding backend.
 
 ---
 
-## Project Status
+## Documentation
 
-**Completed:** 7/10 Preliminary Experiments (70%)
-- ✅ Core infrastructure
-- ✅ Dataset management (6 datasets)
-- ✅ Statistical analysis module
-- ✅ Mock LLM provider
-- ✅ 7 experiments fully functional
-
-**Remaining:** 3/10 Experiments (30%)
-- ⚠️ PE03 (requires agentic system)
-- ⚠️ PE06
-- ⚠️ PE08
-
-**Future Work:**
-- Real LLM providers (OpenAI, Anthropic, Google)
-- Report generation (Markdown, HTML, PDF)
-- Agentic system integration
+| File | Description |
+|------|-------------|
+| [README.md](README.md) | This file -- overview and quick start |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | System design, components, and data flow |
+| [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) | Detailed completion status and requirements mapping |
+| [FILE_STRUCTURE.md](FILE_STRUCTURE.md) | Complete file tree with descriptions |
+| [OLLAMA.md](OLLAMA.md) | Running experiments with local Ollama models |
+| [configs/CONFIGURATION.md](configs/CONFIGURATION.md) | Configuration file reference |
+| [pes/datasets/README.md](pes/datasets/README.md) | Dataset module user guide |
+| [CONTINUATION_GUIDE.md](CONTINUATION_GUIDE.md) | Development workflow and session management |
 
 ---
 
-## Common Workflows
+## Configuration
 
-### Run a Single Experiment
+All experiments are configured through `configs/config.yaml`. The file controls:
 
-```bash
-# Run experiment
-python pe05.py configs/config.yaml
+- Which LLM provider and model each experiment uses
+- Dataset paths and selection
+- Experiment-specific parameters (temperatures, token limits, strategies, etc.)
+- Which experiments are enabled or disabled
 
-# Check results
-cat results/MaxTokenDeterminationExperiment_PE05_*.json
-```
-
-### Run Multiple Experiments
-
-```bash
-# Run all working experiments sequentially
-for exp in pe01 pe02 pe04 pe05 pe07 pe09 pe10; do
-    python ${exp}.py configs/config.yaml
-done
-
-# View all results
-ls -lt results/
-```
-
-### Analyze Results
-
-```bash
-# View JSON results with pretty printing
-python -m json.tool results/PowerAnalysisExperiment_PE10_*.json
-
-# Extract specific fields
-cat results/PE10_*.json | grep -A 5 "recommendations"
-```
+See [configs/CONFIGURATION.md](configs/CONFIGURATION.md) for the complete reference.
 
 ---
 
-## Next Steps
+## Report Generation
 
-1. **Read IMPLEMENTATION_STATUS.md** - See detailed completion status
-2. **Run working experiments** - Try PE10, PE01, PE04, PE05, PE07, PE09
-3. **Review experiment results** - Check results/ directory
-4. **Implement remaining experiments** - PE03, PE06, PE08 (optional)
-5. **Add real LLM providers** - OpenAI, Anthropic, Google (when ready)
+PES includes report generators for three output formats:
 
----
+- **Markdown** -- GitHub-compatible tables and formatting
+- **HTML** -- Interactive reports with Chart.js visualizations
+- **LaTeX** -- ACM sigconf conference paper format
 
-## Support
-
-For detailed information:
-- System design → [ARCHITECTURE.md](ARCHITECTURE.md)
-- Implementation details → [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md)
-- Dataset usage → [pes/datasets/README.md](pes/datasets/README.md)
-- Code documentation → See docstrings in source files
-
----
-
-**Last Updated:** 2025-12-03 (Session 6 - Phase 4 Complete)
+See the report generation module at `pes/analysis/reports/` for usage details.
