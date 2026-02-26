@@ -206,9 +206,7 @@ class LanguageEffectExperiment(BaseExperiment):
         dataset_name = self.exp_config['dataset']
 
         # Get dataset base path from config
-        datasets_config = self.config.get('datasets', {})
-        dataset_config = datasets_config.get(dataset_name.lower(), {})
-        base_path = dataset_config.get('base_path', f'datasets/{dataset_name}')
+        base_path = self.config.get('datasets.base_path', './datasets')
 
         # Load dataset using the loader
         dataset = load_dataset(dataset_name, {'base_path': base_path})

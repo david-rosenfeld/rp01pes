@@ -14,7 +14,7 @@ from ..core.base_experiment import BaseExperiment
 from ..core.config import ConfigurationManager
 from ..core.exceptions import ExperimentError
 from ..llm.factory import get_provider
-from ..datasets import get_dataset
+from ..datasets import load_dataset
 from ..analysis import (
     descriptive_statistics,
     one_way_anova,
@@ -246,7 +246,8 @@ class TemperatureOptimizationExperiment(BaseExperiment):
         dataset_name = self.exp_config.get('dataset', 'albergate')
 
         # Load dataset
-        dataset = get_dataset(dataset_name)
+        base_path = self.config.get('datasets.base_path', './datasets')
+        dataset = load_dataset(dataset_name, {'base_path': base_path})
 
         return {
             'name': dataset_name,
@@ -288,9 +289,19 @@ class TemperatureOptimizationExperiment(BaseExperiment):
                 temp_model_config
             )
 
-            # Get sample tasks
+            # Get sample tasks from dataset requirements
             dataset = dataset_info['dataset']
-            tasks = dataset.get_tasks(task_type=task_type, limit=5)  # Small sample
+            sample_size = self.exp_config.get('sample_size', 5)
+            requirements = list(dataset.requirements.values())[:sample_size]
+            tasks = [
+                {
+                    'requirement': req.content,
+                    'code': f'Source files for {req.req_id}',
+                    'task_type': task_type,
+                    'req_id': req.req_id
+                }
+                for req in requirements
+            ]
 
             # Execute tasks
             scores = []

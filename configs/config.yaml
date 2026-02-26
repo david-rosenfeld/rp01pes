@@ -1,5 +1,6 @@
 # Preliminary Experiments System - Configuration File
 # This file provides configuration for all 10 preliminary experiments
+# NOTE: Config keys under experiments must match what each experiment class expects
 
 # Execution settings
 execution:
@@ -22,7 +23,8 @@ models:
     provider: "mock"
     model: "mock-model-1.0"
     temperature: 0.7
-  
+    response_mode: "realistic"
+
   # OpenAI models (TODO: Add API key)
   gpt4:
     provider: "openai"
@@ -32,7 +34,7 @@ models:
     max_tokens: 2000
     cost_per_1k_prompt_tokens: 0.03
     cost_per_1k_completion_tokens: 0.06
-  
+
   gpt35:
     provider: "openai"
     model: "gpt-3.5-turbo"
@@ -41,7 +43,7 @@ models:
     max_tokens: 2000
     cost_per_1k_prompt_tokens: 0.0015
     cost_per_1k_completion_tokens: 0.002
-  
+
   # Anthropic Claude (TODO: Add API key)
   claude_sonnet:
     provider: "anthropic"
@@ -51,7 +53,7 @@ models:
     max_tokens: 4000
     cost_per_1k_prompt_tokens: 0.003
     cost_per_1k_completion_tokens: 0.015
-  
+
   # Google Gemini (TODO: Add API key)
   gemini:
     provider: "google"
@@ -62,98 +64,113 @@ models:
 
 # Dataset configurations
 datasets:
+  base_path: "./datasets"
+
   libeest:
     name: "LibEST"
-    base_path: "data/LibEST"  # TODO: Update with actual path
+    base_path: "data/LibEST"
     language: "C"
     requirements_dir: "requirements"
     source_dir: "src"
     ground_truth_file: "ground.txt"
-    link_types: ["Rq→Src"]
-  
+    link_types: ["Rq->Src"]
+
   ebt:
     name: "EBT"
-    base_path: "data/EBT"  # TODO: Update with actual path
+    base_path: "data/EBT"
     language: "Java"
     requirements_dir: "requirements"
     source_dir: "src"
     tests_dir: "tests"
     ground_truth_file: "ground.txt"
-    link_types: ["Rq→Src", "Rq→Test"]
-  
+    link_types: ["Rq->Src", "Rq->Test"]
+
   itrust:
     name: "iTrust"
-    base_path: "data/iTrust"  # TODO: Update with actual path
+    base_path: "data/iTrust"
     language: "Java"
     requirements_dir: "use_cases"
     source_dir: "src"
     ground_truth_file: "ground.txt"
-    link_types: ["UC→Src"]
+    link_types: ["UC->Src"]
 
 # Experiment-specific configurations
 
 experiments:
   # PE01: Language Effect Assessment
+  # Code reads: experiments.language_effect
+  # Needs >= 3 models for normality test (min 3 data points)
   language_effect:
     enabled: true
-    dataset: "albergate"  # Italian dataset with language variants
-    models: ["GPT-4", "Claude-Sonnet"]  # References to model_selection.candidate_models (mock)
-    task_type: "trace"  # Representative task
+    dataset: "albergate"
+    models:
+      - name: "GPT-4"
+        provider: "mock"
+        model: "gpt-4"
+        response_mode: "realistic"
+      - name: "Claude-Sonnet"
+        provider: "mock"
+        model: "claude-sonnet-4"
+        response_mode: "realistic"
+      - name: "GPT-3.5-Turbo"
+        provider: "mock"
+        model: "gpt-3.5-turbo"
+        response_mode: "realistic"
+    task_type: "trace"
     sample_size: 10
     significance_level: 0.05
-  
+
   # PE02: Model Selection - Prompt-Based
+  # Code reads: experiments.model_selection
   model_selection:
     enabled: true
     models_per_category: 2
     candidate_models:
-      # Closed-source models
       - name: "GPT-4"
-        provider: "mock"  # Change to "openai" when ready
+        provider: "mock"
         model: "gpt-4"
         category: "closed-source"
         temperature: 0.7
         max_tokens: 2000
         cost_per_1k_prompt_tokens: 0.03
         cost_per_1k_completion_tokens: 0.06
-      
+
       - name: "Claude-Sonnet"
-        provider: "mock"  # Change to "anthropic" when ready
+        provider: "mock"
         model: "claude-sonnet-4"
         category: "closed-source"
         temperature: 0.7
         max_tokens: 4000
         cost_per_1k_prompt_tokens: 0.003
         cost_per_1k_completion_tokens: 0.015
-      
+
       - name: "GPT-3.5-Turbo"
-        provider: "mock"  # Change to "openai" when ready
+        provider: "mock"
         model: "gpt-3.5-turbo"
         category: "closed-source"
         temperature: 0.7
         max_tokens: 2000
         cost_per_1k_prompt_tokens: 0.0015
         cost_per_1k_completion_tokens: 0.002
-      
-      # Open-source models (via API)
+
       - name: "Llama-3-70B"
-        provider: "mock"  # TODO: Configure actual provider
+        provider: "mock"
         model: "llama-3-70b"
         category: "open-source"
         temperature: 0.7
         max_tokens: 2000
         cost_per_1k_prompt_tokens: 0.0
         cost_per_1k_completion_tokens: 0.0
-      
+
       - name: "Mistral-Large"
-        provider: "mock"  # TODO: Configure actual provider
+        provider: "mock"
         model: "mistral-large"
         category: "open-source"
         temperature: 0.7
         max_tokens: 2000
         cost_per_1k_prompt_tokens: 0.0
         cost_per_1k_completion_tokens: 0.0
-    
+
     benchmark_task:
       description: "Simple Python function generation"
       prompt: |
@@ -164,86 +181,99 @@ experiments:
         correctness: "Function exists and handles basic case"
         documentation: "Includes docstring"
         error_handling: "Handles empty list"
-  
-  # PE03: Agent Selection
-  agent_selection:
-    enabled: true
-    agents_per_category: 2
-    candidate_agents:
-      # TODO: Configure actual agentic systems
-      - name: "Agent-A"
-        category: "closed-source"
-        backend_models: ["gpt-4", "claude-sonnet"]
-      - name: "Agent-B"
-        category: "open-source"
-        backend_models: ["llama-3-70b"]
-    benchmark_task:
-      description: "Simple bug fix task"
-      # TODO: Define specific task
-  
+
+  # PE03: Agent Selection (Deferred - not runnable)
+  # Code reads: experiments.agentselection
+  agentselection:
+    enabled: false
+
   # PE04: Temperature Optimization
-  temperature_optimization:
+  # Code reads: experiments.temperatureoptimization
+  temperatureoptimization:
     enabled: true
-    correctness_tasks: ["bug_fix", "documentation"]
-    exploratory_tasks: ["new_feature", "test_generation"]
-    correctness_temperatures: [0.0, 0.1, 0.2]
-    exploratory_temperatures: [0.5, 0.6, 0.7]
-    sample_size_per_temperature: 5
-  
+    model:
+      provider: "mock"
+      name: "mock-model"
+      response_mode: "realistic"
+    dataset: "albergate"
+    task_types: ["trace", "recover", "fill"]
+    correctness_temperature_range: [0.0, 0.2, 0.4, 0.6, 0.8]
+    exploratory_temperature_range: [0.4, 0.6, 0.8, 1.0, 1.2]
+    sample_size: 5
+
   # PE05: Max Token Determination
-  max_token_determination:
+  # Code reads: experiments.maxtokendetermination
+  maxtokendetermination:
     enabled: true
-    task_types: ["new_feature", "bug_fix", "test_generation", "documentation"]
-    sample_size: 20
-    percentiles: [50, 75, 90, 95, 99]
-  
+    model:
+      provider: "mock"
+      name: "mock-model"
+      response_mode: "realistic"
+    dataset: "albergate"
+    task_types: ["trace", "recover"]
+    sample_size: 15
+    candidate_limits: [100, 200, 300, 500, 1000, 2000]
+    max_truncation_rate: 0.05
+
   # PE06: Stop Sequence Definition
+  # Code reads: experiments.stop_sequence
   stop_sequence:
     enabled: true
-    task_types: ["new_feature", "bug_fix", "test_generation", "documentation"]
+    model:
+      provider: "mock"
+      name: "mock-model"
+      response_mode: "realistic"
+    dataset: "albergate"
+    task_types: ["trace", "recover"]
+    sample_size: 15
+    false_positive_threshold: 0.05
     candidate_sequences:
-      new_feature: ["```\n\n", "END_OF_CODE"]
-      bug_fix: ["```\n\n", "END_OF_FIX"]
-      test_generation: ["```\n\n", "END_OF_TESTS"]
-      documentation: ["```\n\n", "END_OF_DOC"]
-  
+      trace: ["```\n\n", "END_OF_TRACE", "---END---"]
+      recover: ["```\n\n", "END_OF_RECOVERY", "---END---"]
+
   # PE07: Prompting Strategy Testing
-  prompt_strategy:
+  # Code reads: experiments.promptstrategy
+  promptstrategy:
     enabled: true
-    strategies:
-      - "zero-shot"
-      - "zero-shot-cot"
-      - "few-shot-cot"
+    model:
+      provider: "mock"
+      name: "mock-model"
+      response_mode: "realistic"
+    dataset: "albergate"
+    task_types: ["trace", "recover"]
     sample_size: 10
-  
+    include_few_shot: false
+
   # PE08: Control Condition Determination
+  # Code reads: experiments.control_condition
   control_condition:
     enabled: true
+    model:
+      provider: "mock"
+      name: "mock-model"
+      response_mode: "realistic"
+    dataset: "ebt"
     variants:
       - "full_codebase"
       - "expanded_file_list"
     expansion_factors: [2, 3, 5]
-  
+    sample_size: 10
+    test_separately: ["prompt_based", "agentic"]
+
   # PE09: Token Budget Allocation
-  token_budget:
+  # Code reads: experiments.tokenbudget
+  tokenbudget:
     enabled: true
-    total_budget: 8000
-    sections:
-      persona: 100
-      instruction: 500
-      requirement: 1000
-      traceability_bundle: 4000
-      file_list: 2000
-      output_specification: 400
-  
+    total_budget: 4000
+    dataset: "albergate"
+    sample_size: 20
+
   # PE10: Power Analysis
-  power_analysis:
+  # Code reads: experiments.poweranalysis
+  poweranalysis:
     enabled: true
-    power_target: 0.80
+    task_types: ["trace", "recover", "fill"]
     alpha: 0.05
-    effect_sizes:
-      new_feature: 0.5  # Medium effect
-      bug_fix: 0.3      # Small-medium effect
-      test_generation: 0.5
-      documentation: 0.3
-    inflation_factor: 1.15  # 15% inflation for failures
+    power: 0.80
+    default_min_effect_size: 0.5
+    inflation_rate: 0.15

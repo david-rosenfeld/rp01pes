@@ -126,7 +126,7 @@ class ControlConditionExperiment(BaseExperiment):
                 context_files = list(dataset.source_files.keys())
             else:
                 # Expanded file list: linked files + extra
-                ground_truth_files = [sf for sf in bundle.source_files]
+                ground_truth_files = [sf.file_name for sf in bundle.linked_files]
                 extra_count = len(ground_truth_files) * (expansion_factor - 1)
                 all_files = list(dataset.source_files.keys())
                 extra_files = [f for f in all_files if f not in ground_truth_files]
@@ -154,7 +154,7 @@ class ControlConditionExperiment(BaseExperiment):
                 completions += 1
 
             # Evaluate correctness
-            ground_truth_files = [sf for sf in bundle.source_files]
+            ground_truth_files = [sf.file_name for sf in bundle.linked_files]
             is_correct, predicted_files = self._evaluate_correctness(
                 response.text, ground_truth_files, requirement
             )
