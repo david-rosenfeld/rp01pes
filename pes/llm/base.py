@@ -8,6 +8,7 @@ implementing REQ-3.2 (LLM Integration Layer).
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
+import os
 import time
 
 from ..core.logging import get_logger
@@ -61,7 +62,7 @@ class BaseLLMProvider(ABC):
         """
         self.config = config
         self.model = config.get('model')
-        self.api_key = config.get('api_key')
+        self.api_key = config.get('api_key') or self._resolve_api_key_from_env(config)
         self.logger = get_logger(f"{self.__class__.__name__}")
 
         # Retry configuration (optional, defaults provided)
@@ -74,7 +75,22 @@ class BaseLLMProvider(ABC):
 
         # Validate required configuration
         self._validate_config()
-    
+
+    # Provider name -> environment variable name mapping
+    _ENV_KEY_MAP = {
+        'openai': 'OPENAI_API_KEY',
+        'anthropic': 'ANTHROPIC_API_KEY',
+        'google': 'GOOGLE_API_KEY',
+    }
+
+    def _resolve_api_key_from_env(self, config: Dict[str, Any]) -> Optional[str]:
+        """Fall back to environment variable for API key based on provider name."""
+        provider = config.get('provider', '')
+        env_var = self._ENV_KEY_MAP.get(provider)
+        if env_var:
+            return os.environ.get(env_var)
+        return None
+
     @abstractmethod
     def _validate_config(self) -> None:
         """
