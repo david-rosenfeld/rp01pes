@@ -8,13 +8,9 @@ Uses the google-genai SDK (unified SDK for Google AI and Vertex AI).
 from typing import Dict, Any, Optional, List
 from google import genai
 from google.genai import types
-from google.api_core import exceptions as google_exceptions
-
 from .base import BaseLLMProvider, LLMResponse
 from .retry import with_retry, RateLimitError
 from ..core.exceptions import LLMError
-
-
 class GoogleProvider(BaseLLMProvider):
     """
     Google Gemini API provider.
@@ -94,11 +90,8 @@ class GoogleProvider(BaseLLMProvider):
                 }
             )
 
-        except google_exceptions.ResourceExhausted as e:
-            raise RateLimitError(f"Google rate limit: {e}") from e
-
-        except google_exceptions.GoogleAPIError as e:
-            raise LLMError(f"Google API error: {e}") from e
-
         except Exception as e:
+            err_msg = str(e).lower()
+            if 'resource' in err_msg and 'exhaust' in err_msg or '429' in err_msg:
+                raise RateLimitError(f"Google rate limit: {e}") from e
             raise LLMError(f"Google provider error: {e}") from e

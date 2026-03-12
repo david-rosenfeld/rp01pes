@@ -104,18 +104,15 @@ experiments:
     enabled: true
     dataset: "albergate"
     models:
-      - name: "GPT-4"
-        provider: "mock"
-        model: "gpt-4"
-        response_mode: "realistic"
+      - name: "GPT-4o"
+        provider: "openai"
+        model: "gpt-4o"
       - name: "Claude-Sonnet"
-        provider: "mock"
-        model: "claude-sonnet-4"
-        response_mode: "realistic"
-      - name: "GPT-3.5-Turbo"
-        provider: "mock"
-        model: "gpt-3.5-turbo"
-        response_mode: "realistic"
+        provider: "anthropic"
+        model: "claude-sonnet-4-20250514"
+      - name: "Gemini-2.0-Flash"
+        provider: "google"
+        model: "gemini-2.0-flash-001"
     task_type: "trace"
     sample_size: 10
     significance_level: 0.05

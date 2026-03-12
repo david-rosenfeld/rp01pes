@@ -69,8 +69,6 @@ def main():
         logger.info("="*60)
         logger.info("PE01: Language Effect Assessment")
         logger.info("="*60)
-        logger.warning("NOTE: This is a STUB implementation")
-        logger.info("="*60)
         
         # Create and execute experiment
         experiment = LanguageEffectExperiment(config, experiment_id="PE01")
