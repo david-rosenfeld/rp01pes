@@ -189,9 +189,9 @@ experiments:
   temperatureoptimization:
     enabled: true
     model:
-      provider: "mock"
-      name: "mock-model"
-      response_mode: "realistic"
+      provider: "openai"
+      name: "GPT-4o"
+      model: "gpt-4o"
     dataset: "albergate"
     task_types: ["trace", "recover", "fill"]
     correctness_temperature_range: [0.0, 0.2, 0.4, 0.6, 0.8]
