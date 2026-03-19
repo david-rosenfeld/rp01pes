@@ -406,25 +406,25 @@ The system shall support configuration of failure behavior: continue (skip faile
 ##### REQ-3.6.1 Language Effect Assessment (Experiment Type 1)
 
 ###### REQ-3.6.1.1 Experiment Purpose
-The system shall implement an experiment to assess the effect of requirement language (Italian vs. English) on model performance.
+The system shall implement an experiment to assess model accuracy on Italian-language requirements by evaluating traceability task performance against ground-truth trace links.
 
 ###### REQ-3.6.1.2 Dataset Selection
-The experiment shall use requirements from Albergate and SMOS datasets (Italian originals) with corresponding English translations.
+The experiment shall use requirements from Italian-language datasets (Albergate, SMOS) along with their ground-truth traceability links for evaluation.
 
 ###### REQ-3.6.1.3 Model Selection
-The experiment shall test 2-3 selected models on both language variants.
+The experiment shall test 2-3 selected models on the Italian requirements.
 
 ###### REQ-3.6.1.4 Task Definition
-The experiment shall use a simple representative task from one of the TaskTypes (configurable).
+The experiment shall present each requirement along with source code file snippets from the dataset and ask the model to identify which files are linked to the requirement.
 
-###### REQ-3.6.1.5 Comparison Metrics
-The experiment shall compute performance metrics for both language variants and calculate the difference.
+###### REQ-3.6.1.5 Ground-Truth Evaluation
+The experiment shall evaluate model responses against ground-truth trace links, computing precision, recall, and F1 per requirement.
 
 ###### REQ-3.6.1.6 Statistical Analysis
-The experiment shall perform statistical tests (paired t-test or Wilcoxon) to determine if differences are significant.
+The experiment shall compute descriptive statistics (mean, median, std, quartiles) and a 95% confidence interval for the mean F1 score across all models and requirements.
 
 ###### REQ-3.6.1.7 Decision Output
-The experiment shall output a recommendation: use Italian as-is, translate to English, or analyze separately.
+The experiment shall output an assessment of whether Italian requirements are usable as-is, based on whether the observed mean F1 meets a configurable acceptability threshold. If below threshold, the experiment shall recommend translation to English or separate analysis of Italian datasets.
 
 ##### REQ-3.6.2 Model Selection - Prompt-Based (Experiment Type 2)
 
