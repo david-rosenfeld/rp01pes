@@ -99,7 +99,7 @@ datasets:
 experiments:
   # PE01: Language Effect Assessment
   # Code reads: experiments.language_effect
-  # Needs >= 3 models for normality test (min 3 data points)
+  # Evaluates model accuracy on Italian-language requirements against ground truth
   language_effect:
     enabled: true
     dataset: "albergate"
@@ -113,9 +113,8 @@ experiments:
       - name: "Gemini-2.5-Flash"
         provider: "google"
         model: "gemini-2.5-flash"
-    task_type: "trace"
     sample_size: 10
-    significance_level: 0.05
+    acceptability_threshold: 0.50  # Minimum mean F1 to consider Italian usable
 
   # PE02: Model Selection - Prompt-Based
   # Code reads: experiments.model_selection

@@ -1,14 +1,19 @@
 """
 PE01: Language Effect Assessment
 
-This experiment assesses the effect of requirement language (Italian vs. English)
-on model performance for traceability tasks.
+This experiment assesses model performance on Italian-language requirements
+by running traceability tasks against the Albergate or SMOS datasets and
+evaluating correctness against ground-truth trace links.
+
+The output is a per-model accuracy profile (precision, recall, F1) that
+the researcher uses to judge whether Italian requirements are usable as-is
+or require translation / separate analysis.
 
 Implements REQ-3.6.1 (Language Effect Assessment).
 """
 
-from typing import Dict, Any, List
-import numpy as np
+import re
+from typing import Dict, Any, List, Set
 
 from ..core.base_experiment import BaseExperiment
 from ..core.config import ConfigurationManager
@@ -17,11 +22,7 @@ from ..llm.factory import get_provider
 from ..datasets import load_dataset
 from ..analysis import (
     descriptive_statistics,
-    paired_t_test,
-    wilcoxon_test,
-    normality_test,
-    cohens_d,
-    paired_difference_ci
+    confidence_interval
 )
 
 
@@ -29,9 +30,10 @@ class LanguageEffectExperiment(BaseExperiment):
     """
     Language Effect Assessment experiment.
 
-    Assesses whether the language of requirements (Italian vs. English)
-    significantly affects model performance on traceability tasks.
-    Uses paired statistical tests to compare performance.
+    Runs traceability tasks on Italian-language requirements and evaluates
+    model responses against ground-truth trace links. Reports per-model
+    and aggregate precision, recall, and F1 scores so the researcher can
+    determine whether Italian requirements are usable as-is.
 
     Implements REQ-3.6.1.
     """
@@ -61,7 +63,6 @@ class LanguageEffectExperiment(BaseExperiment):
         Raises:
             ExperimentError: If configuration is invalid
         """
-        # Check for required fields
         if 'models' not in self.exp_config:
             raise ExperimentError(
                 "Language effect experiment requires 'models' in configuration"
@@ -74,161 +75,126 @@ class LanguageEffectExperiment(BaseExperiment):
 
     def get_description(self) -> str:
         """Get experiment description."""
-        return "Assess the effect of requirement language (Italian vs. English) on model performance"
+        return (
+            "Assess model accuracy on Italian-language requirements "
+            "using ground-truth trace link evaluation"
+        )
 
     def run(self) -> Dict[str, Any]:
         """
         Execute Language Effect Assessment experiment.
 
-        This implements the PE01 workflow (REQ-3.6.1):
-        1. Load Italian and English requirement versions
+        Workflow:
+        1. Load Italian-language dataset with ground-truth trace links
         2. Select 2-3 models for testing
-        3. Execute tasks on both language variants
-        4. Compute performance metrics (accuracy, precision, recall)
-        5. Perform statistical tests (paired t-test or Wilcoxon)
-        6. Calculate effect sizes
-        7. Generate decision recommendation
+        3. For each model, run traceability tasks on sampled requirements
+        4. Evaluate each response against ground truth (precision/recall/F1)
+        5. Compute per-model and aggregate statistics
+        6. Generate assessment of whether Italian requirements are usable
 
         Returns:
-            Dictionary containing experiment results:
+            Dictionary containing:
                 - models_tested: List of models tested
-                - italian_results: Results on Italian requirements
-                - english_results: Results on English requirements
-                - statistical_tests: Test results
-                - effect_sizes: Effect size calculations
-                - recommendation: Decision recommendation
+                - per_model_results: Per-model accuracy profiles
+                - aggregate_statistics: Overall F1/precision/recall stats
+                - per_requirement_scores: Individual requirement scores
+                - assessment: Usability assessment with rationale
 
         Implements REQ-3.6.1.1 through REQ-3.6.1.7
         """
         self.log_info("Starting language effect experiment")
 
-        # Step 1: Load dataset with both language versions (REQ-3.6.1.1)
-        dataset_info = self._load_dataset()
-        self.log_info(f"Loaded dataset: {dataset_info['name']}")
+        # Step 1: Load dataset (REQ-3.6.1.1)
+        dataset = self._load_dataset()
+        self.log_info(
+            f"Loaded dataset: {dataset.name} "
+            f"(language={dataset.language}, "
+            f"{len(dataset.requirements)} requirements, "
+            f"{len(dataset.traceability_links)} trace links)"
+        )
 
         # Step 2: Select models (REQ-3.6.1.2)
         models = self._select_models()
         self.log_info(f"Testing {len(models)} models")
 
-        # Step 3: Execute tasks on both language variants (REQ-3.6.1.3)
-        italian_results = []
-        english_results = []
+        # Step 3-4: Run tasks and evaluate against ground truth
+        sample_size = self.exp_config.get('sample_size', 10)
+        requirements = self._select_requirements(dataset, sample_size)
+        self.log_info(f"Sampled {len(requirements)} requirements with trace links")
+
+        per_model_results = []
+        all_f1_scores = []  # Flat list across all models for aggregate stats
 
         for model_config in models:
-            self.log_info(f"Testing model: {model_config['name']}")
+            model_name = model_config['name']
+            self.log_info(f"Testing model: {model_name}")
 
-            # Test on Italian requirements
-            italian_scores = self._test_model_on_language(
-                model_config,
-                dataset_info,
-                language='italian'
+            model_result = self._test_model(model_config, dataset, requirements)
+            per_model_results.append(model_result)
+            all_f1_scores.extend(model_result['per_requirement_f1'])
+
+            self.log_info(
+                f"  {model_name}: F1={model_result['mean_f1']:.3f}, "
+                f"precision={model_result['mean_precision']:.3f}, "
+                f"recall={model_result['mean_recall']:.3f}"
             )
-            italian_results.append(italian_scores)
 
-            # Test on English requirements
-            english_scores = self._test_model_on_language(
-                model_config,
-                dataset_info,
-                language='english'
-            )
-            english_results.append(english_scores)
-
-        # Step 4: Compute aggregate performance metrics (REQ-3.6.1.4)
-        italian_accuracy = [r['accuracy'] for r in italian_results]
-        english_accuracy = [r['accuracy'] for r in english_results]
-
-        italian_stats = descriptive_statistics(italian_accuracy)
-        english_stats = descriptive_statistics(english_accuracy)
-
-        self.log_info(
-            f"Italian mean accuracy: {italian_stats['mean']:.3f} "
-            f"(+/-{italian_stats['std']:.3f})"
-        )
-        self.log_info(
-            f"English mean accuracy: {english_stats['mean']:.3f} "
-            f"(+/-{english_stats['std']:.3f})"
+        # Step 5: Compute aggregate statistics (REQ-3.6.1.4)
+        aggregate_stats = self._compute_aggregate_statistics(
+            per_model_results, all_f1_scores
         )
 
-        # Step 5: Perform statistical tests (REQ-3.6.1.5)
-        statistical_tests = self._perform_statistical_tests(
-            italian_accuracy,
-            english_accuracy
+        # Step 6: Generate assessment (REQ-3.6.1.7)
+        threshold = self.exp_config.get('acceptability_threshold', 0.50)
+        assessment = self._generate_assessment(
+            per_model_results, aggregate_stats, threshold
         )
 
-        # Step 6: Calculate effect sizes (REQ-3.6.1.6)
-        effect_sizes = self._calculate_effect_sizes(
-            italian_accuracy,
-            english_accuracy
-        )
-
-        # Step 7: Generate recommendation (REQ-3.6.1.7)
-        recommendation = self._generate_recommendation(
-            italian_stats,
-            english_stats,
-            statistical_tests,
-            effect_sizes
-        )
+        self.log_info(f"Assessment: {assessment['decision']}")
 
         # Compile results
         results = {
             'experiment_id': self.experiment_id,
+            'dataset': dataset.name,
+            'dataset_language': dataset.language,
             'models_tested': [m['name'] for m in models],
-            'dataset': dataset_info['name'],
-            'italian_results': {
-                'individual_scores': italian_results,
-                'statistics': italian_stats,
-                'accuracy': italian_accuracy
-            },
-            'english_results': {
-                'individual_scores': english_results,
-                'statistics': english_stats,
-                'accuracy': english_accuracy
-            },
-            'statistical_tests': statistical_tests,
-            'effect_sizes': effect_sizes,
-            'recommendation': recommendation
+            'sample_size': len(requirements),
+            'requirements_tested': [r.req_id for r in requirements],
+            'per_model_results': per_model_results,
+            'aggregate_statistics': aggregate_stats,
+            'assessment': assessment
         }
 
         self.log_info("Language effect experiment completed")
-        self.log_info(f"Recommendation: {recommendation['decision']}")
-
         return results
 
-    def _load_dataset(self) -> Dict[str, Any]:
+    def _load_dataset(self):
         """
-        Load dataset with Italian and English versions.
-
-        Implements REQ-3.6.1.1: Load both language versions.
+        Load the Italian-language dataset.
 
         Returns:
-            Dataset information dictionary
+            Dataset object
+
+        Raises:
+            ExperimentError: If dataset has no trace links
         """
         dataset_name = self.exp_config['dataset']
-
-        # Get dataset base path from config
         base_path = self.config.get('datasets.base_path', './datasets')
-
-        # Load dataset using the loader
         dataset = load_dataset(dataset_name, {'base_path': base_path})
 
-        # For PE01, we need datasets that are in Italian (Albergate, SMOS)
-        # The "English version" would be translations (not currently in dataset)
-        # For now, we simulate both language variants from the same dataset
-        is_italian_dataset = dataset.language.lower() == 'italian'
-
-        if not is_italian_dataset:
-            self.log_warning(
-                f"Dataset {dataset_name} is in {dataset.language}, not Italian. "
-                f"PE01 is designed for Italian datasets (Albergate, SMOS) to test "
-                f"language effects. Proceeding with simulated language comparison."
+        if not dataset.traceability_links:
+            raise ExperimentError(
+                f"Dataset '{dataset_name}' has no traceability links. "
+                f"PE01 requires ground-truth links for evaluation."
             )
 
-        return {
-            'name': dataset_name,
-            'dataset': dataset,
-            'original_language': dataset.language,
-            'languages': ['italian', 'english'] if is_italian_dataset else [dataset.language, 'english']
-        }
+        if dataset.language.lower() != 'italian':
+            self.log_warning(
+                f"Dataset '{dataset_name}' is in {dataset.language}, not Italian. "
+                f"PE01 is designed for Italian datasets (Albergate, SMOS)."
+            )
+
+        return dataset
 
     def _select_models(self) -> List[Dict[str, Any]]:
         """
@@ -236,40 +202,36 @@ class LanguageEffectExperiment(BaseExperiment):
 
         Implements REQ-3.6.1.2: Test with 2-3 models.
 
-        Models can be specified as:
-        1. Full model config dicts in experiments.language_effect.models
-        2. String references to models defined in top-level 'models' section
-        3. String references to models in 'experiments.model_selection.candidate_models'
-
         Returns:
             List of model configurations
         """
         model_refs = self.exp_config.get('models', [])
 
-        # Resolve model references to full configurations
         resolved_models = []
         for model_ref in model_refs[:3]:  # Limit to 3 as per requirements
             if isinstance(model_ref, dict):
-                # Already a full config
                 resolved_models.append(model_ref)
             elif isinstance(model_ref, str):
-                # Look up by name - first try top-level models section
+                # Look up by name in top-level models section
                 model_config = self.config.get(f'models.{model_ref}', None)
-                if model_config:
-                    model_config = dict(model_config) if hasattr(model_config, 'items') else model_config
-                    if isinstance(model_config, dict):
-                        model_config['name'] = model_ref
-                        resolved_models.append(model_config)
-                        continue
+                if model_config and isinstance(model_config, dict):
+                    model_config = dict(model_config)
+                    model_config['name'] = model_ref
+                    resolved_models.append(model_config)
+                    continue
 
                 # Try model_selection.candidate_models
-                candidates = self.config.get('experiments.model_selection.candidate_models', [])
+                candidates = self.config.get(
+                    'experiments.model_selection.candidate_models', []
+                )
                 for candidate in candidates:
                     if candidate.get('name', '').lower() == model_ref.lower():
                         resolved_models.append(candidate)
                         break
                 else:
-                    self.log_warning(f"Could not resolve model reference: {model_ref}")
+                    self.log_warning(
+                        f"Could not resolve model reference: {model_ref}"
+                    )
 
         if len(resolved_models) < 2:
             raise ExperimentError(
@@ -279,48 +241,73 @@ class LanguageEffectExperiment(BaseExperiment):
 
         return resolved_models
 
-    def _test_model_on_language(
+    def _select_requirements(self, dataset, sample_size: int) -> list:
+        """
+        Select requirements that have ground-truth trace links.
+
+        Only requirements with at least one trace link are useful for
+        evaluation, so we filter for those first, then take up to
+        sample_size.
+
+        Args:
+            dataset: Dataset object
+            sample_size: Maximum number of requirements to sample
+
+        Returns:
+            List of Requirement objects with trace links
+        """
+        requirements_with_links = []
+        for req_id, req in dataset.requirements.items():
+            links = dataset.get_links_for_requirement(req_id)
+            if links:
+                requirements_with_links.append(req)
+
+        if not requirements_with_links:
+            raise ExperimentError(
+                "No requirements with trace links found in dataset. "
+                "Cannot evaluate without ground truth."
+            )
+
+        selected = requirements_with_links[:sample_size]
+
+        if len(selected) < sample_size:
+            self.log_warning(
+                f"Only {len(selected)} requirements have trace links "
+                f"(requested {sample_size})"
+            )
+
+        return selected
+
+    def _test_model(
         self,
         model_config: Dict[str, Any],
-        dataset_info: Dict[str, Any],
-        language: str
+        dataset,
+        requirements: list
     ) -> Dict[str, Any]:
         """
-        Test a model on requirements in a specific language.
-
-        Implements REQ-3.6.1.3: Execute tasks on language variant.
+        Test a single model on all sampled requirements.
 
         Args:
             model_config: Model configuration
-            dataset_info: Dataset information
-            language: Language to test ('italian' or 'english')
+            dataset: Dataset object
+            requirements: List of Requirement objects to test
 
         Returns:
-            Performance scores dictionary
+            Dictionary with per-requirement and aggregate scores
         """
-        # Create provider
-        provider = get_provider(
-            model_config['provider'],
-            model_config
-        )
+        provider = get_provider(model_config['provider'], model_config)
 
-        # Get dataset
-        dataset = dataset_info['dataset']
-
-        # Get sample of requirements from dataset
-        sample_size = self.exp_config.get('sample_size', 10)
-        requirements = list(dataset.requirements.values())[:sample_size]
-
-        # Execute tasks
-        correct = 0
-        total = len(requirements)
+        per_req_scores = []
 
         for req in requirements:
-            # Create task from requirement
-            task = self._create_task_from_requirement(req, dataset, language)
+            # Get ground-truth linked files
+            links = dataset.get_links_for_requirement(req.req_id)
+            ground_truth_files = set()
+            for link in links:
+                ground_truth_files.update(link.target_files)
 
-            # Generate prompt for traceability task
-            prompt = self._create_task_prompt(task, language)
+            # Build prompt
+            prompt = self._build_prompt(req, dataset)
 
             # Get model response
             response = provider.generate(
@@ -329,258 +316,263 @@ class LanguageEffectExperiment(BaseExperiment):
                 max_tokens=model_config.get('max_tokens', 500)
             )
 
-            # Evaluate response (simplified evaluation)
-            is_correct = self._evaluate_response(response.text, task)
-            if is_correct:
-                correct += 1
+            # Extract predicted files from response
+            predicted_files = self._extract_file_predictions(
+                response.text, dataset
+            )
 
-        # Calculate metrics
-        accuracy = correct / total if total > 0 else 0.0
-        precision = accuracy  # Simplified
-        recall = accuracy  # Simplified
+            # Compute precision, recall, F1 against ground truth
+            scores = self._compute_scores(predicted_files, ground_truth_files)
+            scores['requirement_id'] = req.req_id
+            scores['ground_truth_files'] = sorted(ground_truth_files)
+            scores['predicted_files'] = sorted(predicted_files)
+
+            per_req_scores.append(scores)
+
+        # Aggregate across requirements for this model
+        f1_scores = [s['f1'] for s in per_req_scores]
+        precision_scores = [s['precision'] for s in per_req_scores]
+        recall_scores = [s['recall'] for s in per_req_scores]
 
         return {
             'model': model_config['name'],
-            'language': language,
-            'accuracy': accuracy,
-            'precision': precision,
-            'recall': recall,
-            'total_tasks': total,
-            'correct': correct
+            'per_requirement_scores': per_req_scores,
+            'per_requirement_f1': f1_scores,
+            'mean_f1': sum(f1_scores) / len(f1_scores) if f1_scores else 0.0,
+            'mean_precision': (
+                sum(precision_scores) / len(precision_scores)
+                if precision_scores else 0.0
+            ),
+            'mean_recall': (
+                sum(recall_scores) / len(recall_scores)
+                if recall_scores else 0.0
+            ),
+            'statistics': descriptive_statistics(f1_scores) if f1_scores else {}
         }
 
-    def _create_task_from_requirement(
-        self,
-        requirement,
-        dataset,
-        language: str
-    ) -> Dict[str, Any]:
+    def _build_prompt(self, requirement, dataset) -> str:
         """
-        Create a traceability task from a requirement.
+        Build the traceability task prompt for a requirement.
+
+        Provides the requirement text and code snippets from ALL source
+        files in the dataset (not just linked ones), so the model must
+        identify which files are linked.
 
         Args:
-            requirement: Requirement object from dataset
+            requirement: Requirement object
             dataset: Dataset object
-            language: Language variant ('italian' or 'english')
-
-        Returns:
-            Task dictionary
-        """
-        # Get linked source files for this requirement
-        links = dataset.get_links_for_requirement(requirement.req_id)
-        linked_files = []
-        for link in links:
-            for file_name in link.target_files:
-                if file_name in dataset.source_files:
-                    linked_files.append(dataset.source_files[file_name])
-
-        # For language simulation: if testing "english" on an Italian dataset,
-        # we'd normally use translated text. Since translations aren't available,
-        # we use the original text but note the simulated language context.
-        req_text = requirement.content
-
-        # Get code snippets from linked files (first 500 chars each)
-        code_snippets = []
-        for sf in linked_files[:3]:  # Limit to 3 files
-            snippet = sf.content[:500] if len(sf.content) > 500 else sf.content
-            code_snippets.append(f"// {sf.file_name}\n{snippet}")
-
-        return {
-            'type': 'trace',
-            'requirement_id': requirement.req_id,
-            'requirement': req_text,
-            'code': '\n\n'.join(code_snippets) if code_snippets else '[No linked code available]',
-            'language': language,
-            'ground_truth': [link.target_files for link in links]
-        }
-
-    def _create_task_prompt(self, task: Dict[str, Any], language: str) -> str:
-        """
-        Create task prompt for traceability task.
-
-        Args:
-            task: Task dictionary
-            language: Language of requirements
 
         Returns:
             Formatted prompt string
         """
-        task_type = task.get('type', 'trace')
+        # Include code snippets from all source files (up to a limit)
+        # so the model has to identify the correct ones
+        code_snippets = []
+        for file_name, source_file in list(dataset.source_files.items())[:20]:
+            snippet = source_file.content[:300]
+            code_snippets.append(f"// {file_name}\n{snippet}")
 
-        if task_type == 'trace':
-            prompt = (
-                f"Identify trace links between the following requirement and code artifacts.\n\n"
-                f"Requirement: {task.get('requirement', '')}\n\n"
-                f"Code Artifacts: {task.get('code', '')}\n\n"
-                f"Provide the trace links."
-            )
-        else:
-            prompt = f"Task: {task.get('description', '')}"
-
-        return prompt
-
-    def _evaluate_response(self, response_text: str, task: Dict[str, Any]) -> bool:
-        """
-        Evaluate if response is correct.
-
-        This is a simplified evaluation for mock testing.
-        In real implementation, would compare against ground truth.
-
-        Args:
-            response_text: Model response
-            task: Task with ground truth
-
-        Returns:
-            True if response is correct
-        """
-        # Simplified evaluation: check if response contains expected elements
-        # In real implementation, would do proper trace link comparison
-
-        # For mock testing, use a simple heuristic based on response length
-        # and presence of expected keywords
-        has_links = 'REQ-' in response_text or 'link' in response_text.lower()
-        is_substantive = len(response_text) > 20
-
-        # Simulate accuracy based on response characteristics
-        if has_links and is_substantive:
-            # Return True ~85% of the time for realistic mock data
-            import random
-            return random.random() < 0.85
-        else:
-            return False
-
-    def _perform_statistical_tests(
-        self,
-        italian_scores: List[float],
-        english_scores: List[float]
-    ) -> Dict[str, Any]:
-        """
-        Perform statistical tests to compare languages.
-
-        Implements REQ-3.6.1.5: Statistical hypothesis testing.
-
-        Args:
-            italian_scores: Italian performance scores
-            english_scores: English performance scores
-
-        Returns:
-            Statistical test results
-        """
-        # Check normality assumption
-        italian_normal = normality_test(italian_scores)
-        english_normal = normality_test(english_scores)
-
-        self.log_info(
-            f"Normality: Italian={italian_normal['is_normal']}, "
-            f"English={english_normal['is_normal']}"
+        code_context = '\n\n'.join(code_snippets) if code_snippets else (
+            '[No source files available]'
         )
 
-        # Choose appropriate test
-        if italian_normal['is_normal'] and english_normal['is_normal']:
-            # Use parametric test
-            test_result = paired_t_test(italian_scores, english_scores)
-            test_used = 'paired_t_test'
-        else:
-            # Use non-parametric test
-            test_result = wilcoxon_test(italian_scores, english_scores)
-            test_used = 'wilcoxon_test'
+        return (
+            f"Identify which source code files are linked to the following "
+            f"requirement. List only the file names, one per line.\n\n"
+            f"Requirement:\n{requirement.content}\n\n"
+            f"Available source files:\n{code_context}\n\n"
+            f"Linked files:"
+        )
 
-        # Calculate confidence interval for difference
-        ci_result = paired_difference_ci(italian_scores, english_scores)
-
-        return {
-            'test_used': test_used,
-            'test_result': test_result,
-            'normality_italian': italian_normal,
-            'normality_english': english_normal,
-            'confidence_interval': ci_result
-        }
-
-    def _calculate_effect_sizes(
+    def _extract_file_predictions(
         self,
-        italian_scores: List[float],
-        english_scores: List[float]
-    ) -> Dict[str, Any]:
+        response_text: str,
+        dataset
+    ) -> Set[str]:
         """
-        Calculate effect sizes.
+        Extract predicted file names from the model's response.
 
-        Implements REQ-3.6.1.6: Effect size calculation.
+        Looks for file names that match files known to exist in the
+        dataset, plus common file-name patterns.
 
         Args:
-            italian_scores: Italian performance scores
-            english_scores: English performance scores
+            response_text: Raw model response text
+            dataset: Dataset object (for known file names)
 
         Returns:
-            Effect size results
+            Set of predicted file names
         """
-        # Calculate Cohen's d for paired samples
-        cohens_d_result = cohens_d(italian_scores, english_scores, paired=True)
+        predicted = set()
+        known_files = set(dataset.source_files.keys())
 
-        return {
-            'cohens_d': cohens_d_result
-        }
+        # Strategy 1: Check for exact matches of known file names
+        for file_name in known_files:
+            if file_name in response_text:
+                predicted.add(file_name)
 
-    def _generate_recommendation(
+        # Strategy 2: Regex for file-like patterns (e.g., Foo.java, bar.c)
+        file_pattern = re.compile(
+            r'\b([\w]+\.(?:java|c|h|py|js|cs|cpp|txt))\b',
+            re.IGNORECASE
+        )
+        for match in file_pattern.finditer(response_text):
+            candidate = match.group(1)
+            # Only count files that exist in the dataset
+            if candidate in known_files:
+                predicted.add(candidate)
+
+        return predicted
+
+    def _compute_scores(
         self,
-        italian_stats: Dict[str, Any],
-        english_stats: Dict[str, Any],
-        statistical_tests: Dict[str, Any],
-        effect_sizes: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        predicted: Set[str],
+        ground_truth: Set[str]
+    ) -> Dict[str, float]:
         """
-        Generate decision recommendation.
-
-        Implements REQ-3.6.1.7: Decision recommendation.
+        Compute precision, recall, and F1 for a single requirement.
 
         Args:
-            italian_stats: Italian statistics
-            english_stats: English statistics
-            statistical_tests: Statistical test results
-            effect_sizes: Effect size results
+            predicted: Set of predicted file names
+            ground_truth: Set of ground-truth file names
 
         Returns:
-            Recommendation dictionary
+            Dictionary with precision, recall, f1
         """
-        # Extract key information
-        is_significant = statistical_tests['test_result']['significant']
-        p_value = statistical_tests['test_result']['p_value']
-        effect_size = effect_sizes['cohens_d']['d']
-        effect_interpretation = effect_sizes['cohens_d']['interpretation']
+        if not ground_truth:
+            # No ground truth -- can't evaluate
+            return {'precision': 0.0, 'recall': 0.0, 'f1': 0.0}
 
-        mean_diff = english_stats['mean'] - italian_stats['mean']
+        if not predicted:
+            return {'precision': 0.0, 'recall': 0.0, 'f1': 0.0}
 
-        # Generate decision
-        if not is_significant:
-            decision = "Use original language (Italian)"
-            rationale = (
-                f"No statistically significant difference found "
-                f"(p={p_value:.3f}, alpha=0.05). "
-                f"Effect size is {effect_interpretation} (d={effect_size:.3f}). "
-                f"Recommend using original Italian requirements to preserve "
-                f"semantic fidelity."
+        true_positives = len(predicted & ground_truth)
+        precision = true_positives / len(predicted)
+        recall = true_positives / len(ground_truth)
+
+        if precision + recall > 0:
+            f1 = 2 * (precision * recall) / (precision + recall)
+        else:
+            f1 = 0.0
+
+        return {
+            'precision': precision,
+            'recall': recall,
+            'f1': f1
+        }
+
+    def _compute_aggregate_statistics(
+        self,
+        per_model_results: List[Dict[str, Any]],
+        all_f1_scores: List[float]
+    ) -> Dict[str, Any]:
+        """
+        Compute aggregate statistics across all models and requirements.
+
+        Args:
+            per_model_results: List of per-model result dicts
+            all_f1_scores: Flat list of all F1 scores
+
+        Returns:
+            Aggregate statistics dictionary
+        """
+        all_precision = []
+        all_recall = []
+        for model_result in per_model_results:
+            for req_score in model_result['per_requirement_scores']:
+                all_precision.append(req_score['precision'])
+                all_recall.append(req_score['recall'])
+
+        stats = {
+            'n_observations': len(all_f1_scores),
+            'n_models': len(per_model_results),
+            'f1': descriptive_statistics(all_f1_scores) if all_f1_scores else {},
+            'precision': (
+                descriptive_statistics(all_precision) if all_precision else {}
+            ),
+            'recall': (
+                descriptive_statistics(all_recall) if all_recall else {}
+            ),
+        }
+
+        # Add 95% CI for mean F1 if we have enough data points
+        if len(all_f1_scores) >= 2:
+            stats['f1_confidence_interval'] = confidence_interval(
+                all_f1_scores, confidence=0.95
             )
-        elif mean_diff > 0 and abs(effect_size) > 0.3:
-            decision = "Use English translation"
+
+        return stats
+
+    def _generate_assessment(
+        self,
+        per_model_results: List[Dict[str, Any]],
+        aggregate_stats: Dict[str, Any],
+        threshold: float
+    ) -> Dict[str, Any]:
+        """
+        Generate usability assessment for Italian requirements.
+
+        Args:
+            per_model_results: Per-model results
+            aggregate_stats: Aggregate statistics
+            threshold: Minimum acceptable mean F1
+
+        Returns:
+            Assessment dictionary with decision and rationale
+        """
+        mean_f1 = aggregate_stats['f1'].get('mean', 0.0)
+        f1_ci = aggregate_stats.get('f1_confidence_interval', {})
+        ci_lower = f1_ci.get('lower_bound', None)
+
+        # Per-model summary for the rationale
+        model_summaries = []
+        for mr in per_model_results:
+            model_summaries.append(
+                f"{mr['model']}: F1={mr['mean_f1']:.3f}"
+            )
+        model_summary_str = '; '.join(model_summaries)
+
+        if mean_f1 >= threshold:
+            decision = "Italian requirements are usable as-is"
             rationale = (
-                f"English requirements show significantly better performance "
-                f"(p={p_value:.3f}, effect size={effect_interpretation}, d={effect_size:.3f}). "
-                f"Mean difference: {mean_diff:.3f}. "
-                f"Recommend using English translations for improved accuracy."
+                f"Mean F1 across all models and requirements is {mean_f1:.3f}, "
+                f"which meets the acceptability threshold of {threshold:.2f}. "
+            )
+            if ci_lower is not None:
+                rationale += (
+                    f"95% CI for mean F1: "
+                    f"[{ci_lower:.3f}, {f1_ci.get('upper_bound', 0):.3f}]. "
+                )
+            rationale += (
+                f"Per-model results: {model_summary_str}. "
+                f"Models demonstrate adequate performance on Italian-language "
+                f"requirements without translation."
             )
         else:
-            decision = "Use original language (Italian)"
+            decision = (
+                "Italian requirements may need translation or separate analysis"
+            )
             rationale = (
-                f"Although statistically significant (p={p_value:.3f}), "
-                f"effect size is {effect_interpretation} (d={effect_size:.3f}). "
-                f"Practical significance is minimal. Recommend Italian for authenticity."
+                f"Mean F1 across all models and requirements is {mean_f1:.3f}, "
+                f"which is below the acceptability threshold of {threshold:.2f}. "
+            )
+            if ci_lower is not None:
+                rationale += (
+                    f"95% CI for mean F1: "
+                    f"[{ci_lower:.3f}, {f1_ci.get('upper_bound', 0):.3f}]. "
+                )
+            rationale += (
+                f"Per-model results: {model_summary_str}. "
+                f"Consider translating Italian requirements to English or "
+                f"analyzing Italian datasets separately from English ones."
             )
 
         return {
             'decision': decision,
             'rationale': rationale,
-            'is_significant': is_significant,
-            'p_value': p_value,
-            'effect_size': effect_size,
-            'effect_interpretation': effect_interpretation,
-            'mean_difference': mean_diff
+            'mean_f1': mean_f1,
+            'threshold': threshold,
+            'ci_lower': ci_lower,
+            'per_model_f1': {
+                mr['model']: mr['mean_f1'] for mr in per_model_results
+            }
         }
