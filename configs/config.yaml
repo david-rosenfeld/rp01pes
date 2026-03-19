@@ -216,9 +216,9 @@ experiments:
   stop_sequence:
     enabled: true
     model:
-      provider: "mock"
-      name: "mock-model"
-      response_mode: "realistic"
+      provider: "openai"
+      name: "GPT-4o"
+      model: "gpt-4o"
     dataset: "albergate"
     task_types: ["trace", "recover"]
     sample_size: 15
